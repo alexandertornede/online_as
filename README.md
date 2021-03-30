@@ -1,1 +1,1 @@
-# Code for paper: CROAS: Dealing with Censored Data in OnlineAlgorithm Selection
+# Code for paper: CROAS: Dealing with Censored Data in Online Algorithm Selection
