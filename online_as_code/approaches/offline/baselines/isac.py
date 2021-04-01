@@ -1,12 +1,9 @@
-import logging
-import random
 import numpy as np
 from aslib_scenario.aslib_scenario import ASlibScenario
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.impute import SimpleImputer
 from sklearn.utils import resample
-from baselines.gmeans import GMeans
+from approaches.offline.baselines.gmeans import GMeans
 
 
 class ISAC:
