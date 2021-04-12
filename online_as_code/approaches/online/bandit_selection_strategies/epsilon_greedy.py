@@ -8,7 +8,7 @@ class EpsilonGreedy:
         self.epsilon = epsilon
         random.seed(random_seed)
 
-    def select_based_on_predicted_performance(self, predicted_performances: ndarray):
+    def select_based_on_predicted_performances(self, predicted_performances: ndarray):
         index_of_best_algorithm = np.argmin(predicted_performances)
 
         random_value = random.uniform(0,1)
