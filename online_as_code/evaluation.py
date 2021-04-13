@@ -22,20 +22,15 @@ def publish_results_to_database(db_config, scenario_name: str, fold: int, approa
     db_handle.close()
 
 
-def evaluate(scenario: ASlibScenario, approach, metrics, amount_of_training_instances: int, fold: int, db_config, tune_hyperparameters: bool):
+def evaluate(scenario: ASlibScenario, approach, metrics, amount_of_training_instances: int, fold: int, db_config):
     np.random.seed(fold)
 
     logger.info("-----------------------------")
     logger.info("Evaluating \"" + approach.get_name() + "\" fold " + str(fold) + " training on " + str(
         amount_of_training_instances) + " scenario instances on scenario " + str(scenario.scenario))
 
-    if tune_hyperparameters:
-        optimizer = HyperParameterOptimizer()
-        parametrization = optimizer.optimize(scenario, approach)
-        approach.set_parameters(parametrization)
-
-    train_status = db_config["EXPERIMENTS"]["train_status"]
-    metric_results = evaluate_train_test_split(scenario, approach, metrics, fold, amount_of_training_instances, train_status)
+    censored_value_imputation = db_config["EXPERIMENTS"]["censored_value_imputation"]
+    metric_results = evaluate_train_test_split(scenario, approach, metrics, fold, amount_of_training_instances, censored_value_imputation)
 
     for i, result in enumerate(metric_results):
         publish_results_to_database(db_config, scenario.scenario, fold, approach.get_name(), metrics[i].get_name(), result)
@@ -49,11 +44,11 @@ def print_stats_of_scenario(scenario: ASlibScenario):
     logger.info("cutoff-time: " + str(scenario.algorithm_cutoff_time))
 
 
-def evaluate_scenario(scenario_name: str, path_to_scenario_folder:str, approach, metrics, amount_of_training_scenario_instances: int, fold: int, db_config, tune_hyperparameters: bool):
+def evaluate_scenario(scenario_name: str, path_to_scenario_folder:str, approach, metrics, amount_of_training_scenario_instances: int, fold: int, db_config):
     scenario = ASlibScenario()
     scenario.read_scenario(path_to_scenario_folder + scenario_name)
     print_stats_of_scenario(scenario)
-    evaluate(scenario, approach, metrics, amount_of_training_scenario_instances, fold, db_config, tune_hyperparameters)
+    evaluate(scenario, approach, metrics, amount_of_training_scenario_instances, fold, db_config)
     return scenario_name
 
 

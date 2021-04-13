@@ -17,8 +17,12 @@ from approaches.offline.baselines.snnap import SNNAP
 from approaches.offline.baselines.isac import ISAC
 from approaches.offline.baselines.satzilla11 import SATzilla11
 from approaches.offline.baselines.satzilla07 import SATzilla07
+from approaches.online.deegrote import Degroote
+from approaches.online.bandit_selection_strategies.ucb import UCB
+from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
 from sklearn.linear_model import Ridge
 from par_10_metric import Par10Metric
+from par_10_regret_metric import Par10RegretMetric
 from simple_runtime_metric import RuntimeMetric
 from number_unsolved_instances import NumberUnsolvedInstances
 
@@ -52,6 +56,10 @@ def log_result(result):
 def create_approach(approach_names):
     approaches = list()
     for approach_name in approach_names:
+        if approach_name == 'degroote_epsilon_greedy':
+            approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
+        if approach_name == 'degroote_ucb':
+            approaches.append(Degroote(bandit_selection_strategy=UCB(gamma=1)))
         if approach_name == 'sbs':
             approaches.append(SingleBestSolver())
         if approach_name == 'sbs_with_feature_costs':
@@ -94,20 +102,6 @@ def create_approach(approach_names):
     return approaches
 
 
-def postprocess_instance_wise_results():
-    directory = "output"
-    relevant_output_files = [os.path.join(directory, f) for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and f.endswith('.arff')]
-    for file in relevant_output_files:
-        logger.info("Postprocessing output file " + str(file))
-        opened_file = open(file, 'r')
-        file_name = os.path.basename(opened_file.name).replace('.arff','')
-        header = "@RELATION ALGORITHM_RUNS_"+file_name+"\n\n@ATTRIBUTE instance_id STRING\n@ATTRIBUTE repetition NUMERIC\n@ATTRIBUTE algorithm STRING\n@ATTRIBUTE runtime NUMERIC\n@ATTRIBUTE runstatus {ok , timeout , memout , not_applicable , crash , other}\n\n@DATA\n"
-        file_content_sorted = ''.join(sorted(opened_file.readlines()))
-        writable_file = open(file, 'w')
-        writable_file.write(header + file_content_sorted)
-    logger.info("Postprocessed all output files.")
-
-
 
 #######################
 #         MAIN        #
@@ -134,33 +128,33 @@ path_to_scenario_folder = config["EXPERIMENTS"]["data_folder"]
 approach_names = config["EXPERIMENTS"]["approaches"].split(",")
 amount_of_scenario_training_instances = int(
     config["EXPERIMENTS"]["amount_of_training_scenario_instances"])
-tune_hyperparameters = bool(int(config["EXPERIMENTS"]["tune_hyperparameters"]))
+# we do not make a train/test split in the online setting as we have no prior training dataset. Accordingly,
+# we only have one fold
+fold = 1
 
-for fold in range(1, 11):
+for scenario in scenarios:
+    approaches = create_approach(approach_names)
 
-    for scenario in scenarios:
-        approaches = create_approach(approach_names)
+    if len(approaches) < 1:
+        logger.error("No approaches recognized!")
+    for approach in approaches:
+        metrics = list()
+        metrics.append(Par10Metric())
+        metrics.append(Par10RegretMetric())
+        metrics.append(RuntimeMetric())
+        if approach.get_name() != 'oracle':
+            metrics.append(NumberUnsolvedInstances(False))
+            metrics.append(NumberUnsolvedInstances(True))
+        logger.info("Submitted pool task for approach \"" +
+                    str(approach.get_name()) + "\" on scenario: " + scenario)
+        # pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
+        #                                           amount_of_scenario_training_instances, fold, config, tune_hyperparameters), callback=log_result)
 
-        if len(approaches) < 1:
-            logger.error("No approaches recognized!")
-        for approach in approaches:
-            metrics = list()
-            metrics.append(Par10Metric())
-            metrics.append(RuntimeMetric())
-            if approach.get_name() != 'oracle':
-                metrics.append(NumberUnsolvedInstances(False))
-                metrics.append(NumberUnsolvedInstances(True))
-            logger.info("Submitted pool task for approach \"" +
-                        str(approach.get_name()) + "\" on scenario: " + scenario)
-            # pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
-            #                                           amount_of_scenario_training_instances, fold, config, tune_hyperparameters), callback=log_result)
-
-            evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
-                             amount_of_scenario_training_instances, fold, config, tune_hyperparameters)
-            print('Finished evaluation of fold')
+        evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
+                         amount_of_scenario_training_instances, fold, config)
+        print('Finished evaluation of fold')
 
 pool.close()
 pool.join()
 
-postprocess_instance_wise_results()
 logger.info("Finished all experiments.")

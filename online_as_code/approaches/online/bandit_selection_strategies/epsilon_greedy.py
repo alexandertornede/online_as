@@ -4,14 +4,13 @@ import numpy as np
 
 class EpsilonGreedy:
 
-    def __init__(self, epsilon: float, random_seed: int):
+    def __init__(self, epsilon: float):
         self.epsilon = epsilon
-        random.seed(random_seed)
 
-    def select_based_on_predicted_performances(self, predicted_performances: ndarray):
+    def select_based_on_predicted_performances(self, predicted_performances: ndarray, confidence_interval_widths: ndarray):
         index_of_best_algorithm = np.argmin(predicted_performances)
 
-        random_value = random.uniform(0,1)
+        random_value = np.random.uniform()
 
         #initialize vector with 1 and set the value at the index of the selected algorithm to 0
         result_vector = np.ones(len(predicted_performances))
@@ -19,7 +18,7 @@ class EpsilonGreedy:
 
         if random_value < self.epsilon:
             #select any arm at random
-            random_index = random.randint(0, len(predicted_performances)-1)
+            random_index = np.random.randint(low=0, high=len(predicted_performances))
             result_vector[random_index] = 0
         else:
             #select best
