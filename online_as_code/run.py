@@ -18,6 +18,7 @@ from approaches.offline.baselines.isac import ISAC
 from approaches.offline.baselines.satzilla11 import SATzilla11
 from approaches.offline.baselines.satzilla07 import SATzilla07
 from approaches.online.deegrote import Degroote
+from approaches.online.feature_free_epsilon_greedy import FeatureFreeEpsilonGreedy
 from approaches.online.bandit_selection_strategies.ucb import UCB
 from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
 from sklearn.linear_model import Ridge
@@ -35,7 +36,7 @@ def initialize_logging():
     if not os.path.exists('logs'):
         os.makedirs('logs')
     logging.basicConfig(filename='logs/log_file.log', filemode='w',
-                        format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+                        format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
 
 def load_configuration():
@@ -60,6 +61,8 @@ def create_approach(approach_names):
             approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
         if approach_name == 'degroote_ucb':
             approaches.append(Degroote(bandit_selection_strategy=UCB(gamma=1)))
+        if approach_name == 'feature_free_epsilon_greedy':
+            approaches.append(FeatureFreeEpsilonGreedy())
         if approach_name == 'sbs':
             approaches.append(SingleBestSolver())
         if approach_name == 'sbs_with_feature_costs':

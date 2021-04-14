@@ -15,10 +15,11 @@ logger.addHandler(logging.StreamHandler())
 
 class Degroote:
 
-    def __init__(self, bandit_selection_strategy, regression_model=RandomForestRegressor(n_jobs=1, n_estimators=100)):
+    def __init__(self, bandit_selection_strategy, regression_model=RandomForestRegressor(n_jobs=1, n_estimators=100), standard_deviation_lower_bound=1.0):
         self.pure_regression_model = regression_model
         self.regression_model = Pipeline([('imputer', SimpleImputer()), ('scaler', StandardScaler()), ('model', regression_model)])
         self.bandit_selection_strategy = bandit_selection_strategy
+        self.standard_deviation_lower_bound = standard_deviation_lower_bound
 
     def initialize(self, number_of_algorithms: int, cutoff_time: float):
         self.number_of_algorithms = number_of_algorithms
@@ -77,13 +78,14 @@ class Degroote:
 
                     X_test_for_standard_deviation = np.vstack([X_train, X_test])
 
-                    standard_error = fci.random_forest_error(forest=regressor_for_algorithm_id, X_train=X_train, X_test=X_test_for_standard_deviation, calibrate=False)
-                    relevant_standard_error = standard_error[len(standard_error)-1]
-                    #TODO Check why relevant standard error is sometimes < 0, we actually should not require this negative stde
-                    logger.debug("std: " + str(relevant_standard_error))
-                    relevant_standard_error = abs(relevant_standard_error)
-                    if not math.isnan(relevant_standard_error):
-                        standard_deviation = math.sqrt(relevant_standard_error)
+                    variance = fci.random_forest_error(forest=regressor_for_algorithm_id, X_train=X_train, X_test=X_test_for_standard_deviation, calibrate=False)
+                    relevant_variance = variance[len(variance)-1]
+                    logger.debug("std: " + str(relevant_variance))
+
+                    #TODO How to deal with negative standard error?
+                    if not math.isnan(relevant_variance):
+                        relevant_variance = max([self.standard_deviation_lower_bound, relevant_variance])
+                        standard_deviation = math.sqrt(relevant_variance)
 
             current_standard_deviation.append(standard_deviation)
             predicted_performances.append(prediction)

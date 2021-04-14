@@ -30,7 +30,11 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
     performance_data = scenario.performance_data.to_numpy()
     feature_cost_data = scenario.feature_cost_data.to_numpy() if scenario.feature_cost_data is not None else None
 
-    for instance_id in range(0, len(scenario.instances)):
+    last_instance_id = amount_of_training_instances
+    if amount_of_training_instances <= 0:
+        last_instance_id = len(scenario.instances)
+
+    for instance_id in range(0, last_instance_id):
 
         if instance_id % 100 == 0:
             logger.info("Starting with instance: " + str(instance_id))
@@ -47,7 +51,7 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
 
             # compute feature time
             accumulated_feature_time = 0
-            if scenario.feature_cost_data is not None and approach.get_name() != 'sbs' and approach.get_name() != 'oracle':
+            if scenario.feature_cost_data is not None and approach.get_name() != 'sbs' and approach.get_name() != 'oracle' and approach.get_name() != 'feature_free_epsilon_greedy':
                 feature_time = feature_cost_data[instance_id]
                 accumulated_feature_time = np.sum(feature_time)
 

@@ -24,6 +24,3 @@ class EpsilonGreedy:
             #select best
             result_vector[index_of_best_algorithm] = 0
         return result_vector
-
-
-
