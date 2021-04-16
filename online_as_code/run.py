@@ -18,6 +18,7 @@ from approaches.offline.baselines.isac import ISAC
 from approaches.offline.baselines.satzilla11 import SATzilla11
 from approaches.offline.baselines.satzilla07 import SATzilla07
 from approaches.online.deegrote import Degroote
+from approaches.online.cox_regression import CoxRegression
 from approaches.online.feature_free_epsilon_greedy import FeatureFreeEpsilonGreedy
 from approaches.online.bandit_selection_strategies.ucb import UCB
 from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
@@ -64,6 +65,8 @@ def create_approach(approach_names):
             approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05), regression_model=LinearRegression(n_jobs=1)))
         if approach_name == 'degroote_ucb':
             approaches.append(Degroote(bandit_selection_strategy=UCB(gamma=1)))
+        if approach_name == 'cox_regression_expsilon_greedy':
+            approaches.append(CoxRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05), learning_rate=0.01))
         if approach_name == 'feature_free_epsilon_greedy':
             approaches.append(FeatureFreeEpsilonGreedy())
         if approach_name == 'sbs':

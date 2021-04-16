@@ -26,7 +26,6 @@ class CoxRegression:
         self.cutoff_time = cutoff_time
         self.current_training_X_map = dict()
         self.current_training_y_map = dict()
-        self.current_training_z_map = dict()
         self.current_weight_map = None
 
         self.trained_preprocessing_pipeline = clone(self.raw_preprocessing_pipeline)
@@ -52,7 +51,8 @@ class CoxRegression:
         self.trained_preprocessing_pipeline.fit(X_train)
 
         #run feature vector of new sample through preprocessing
-        new_sample = self.trained_preprocessing_pipeline.transform(features)
+        new_sample = self.trained_preprocessing_pipeline.transform(np.reshape(features,
+                                                                              (1, len(features))))
         is_censored_sample = self.is_time_censored(performance)
 
         #obtain weight vector of algorithm to update
@@ -64,8 +64,8 @@ class CoxRegression:
         if not is_censored_sample:
             #compute gradient
             risk_set = self.compute_risk_set_for_instance_in_algorithm_dataset(algorithm_id, performance)
-            denominator = map(lambda instance: math.exp(np.dot(instance, weight_vector_to_update)), risk_set)
-            nominator = map(lambda instance:  math.exp(np.dot(instance, weight_vector_to_update)) * instance, risk_set)
+            denominator = np.asarray(list(map(lambda instance: math.exp(np.dot(instance, weight_vector_to_update)), risk_set)))
+            nominator = np.asarray(list(map(lambda instance:  math.exp(np.dot(instance, weight_vector_to_update)) * instance, risk_set)))
             gradient = -(new_sample - nominator/denominator)
 
             #perform gradient step
@@ -80,13 +80,13 @@ class CoxRegression:
         for observed_time in y:
             if not self.is_time_censored(observed_time) and min(observed_time, self.cutoff_time) <= timestep:
                 risk_set = self.compute_risk_set_for_instance_in_algorithm_dataset(algorithm_id, observed_time)
-                denominator = map(lambda instance: math.exp(np.dot(instance, weight_vector)), risk_set)
+                denominator = np.asarray(list(map(lambda instance: math.exp(np.dot(instance, weight_vector)), risk_set)))
                 sum += (1/denominator)
         return sum
 
     def compute_survival_function(self, algorithm_id: int, instance: ndarray, timestep: float):
         weight_vector = self.current_weight_map[algorithm_id]
-        return math.pow(self.compute_baseline_survival_function(algorithm_id=algorithm_id, timestep=timestep), math.exp(np.dot(weight_vector, instance)))
+        return math.pow(self.compute_baseline_survival_function(algorithm_id=algorithm_id, timestep=timestep), math.exp(np.dot(weight_vector, np.reshape(instance, len(weight_vector)))))
 
 
     def compute_expected_par10_time(self, algorithm_id: int, instance:ndarray):
@@ -111,23 +111,30 @@ class CoxRegression:
         X = self.current_training_X_map[algorithm_id]
         y = self.current_training_y_map[algorithm_id]
 
-        indices_of_risk_set_elements = np.argwhere(min(np.asarray(y), np.full(len(y), self.cutoff_time)) >= min(performance, self.cutoff_time))
+        indices_of_risk_set_elements = np.argwhere(min(np.asarray(y), np.full(len(y), self.cutoff_time)) >= min(performance, self.cutoff_time))[0]
 
         risk_set = list()
         for i in indices_of_risk_set_elements:
-            risk_set.append(X[i])
+            risk_set.append(self.trained_preprocessing_pipeline.transform(np.reshape(X[i],(1,len(X[i])))))
 
         return risk_set
+
+    def is_data_for_algorithm_present(self, algorithm_id):
+        return len(self.current_training_X_map[algorithm_id]) > 0
 
     def predict(self, features: ndarray, instance_id: int):
         predicted_performances = list()
         current_standard_deviation = list()
 
-        preprocessed_instance = self.trained_preprocessing_pipeline.transform(features)
+        if self.current_weight_map is not None:
+            preprocessed_instance = self.trained_preprocessing_pipeline.transform(np.reshape(features,
+                                                                                             (1, len(features))))
 
-        for algorithm_id in range(self.number_of_algorithms):
-            predicted_performances.append(self.compute_expected_par10_time(algorithm_id=algorithm_id, instance = preprocessed_instance))
-
+            for algorithm_id in range(self.number_of_algorithms):
+                predicted_performances.append(self.compute_expected_par10_time(algorithm_id=algorithm_id, instance = preprocessed_instance))
+        else:
+            for algorithm_id in range(self.number_of_algorithms):
+                predicted_performances.append(0)
         return self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), np.asarray(current_standard_deviation))
 
     def get_name(self):
