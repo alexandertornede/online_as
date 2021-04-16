@@ -22,6 +22,7 @@ from approaches.online.feature_free_epsilon_greedy import FeatureFreeEpsilonGree
 from approaches.online.bandit_selection_strategies.ucb import UCB
 from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
 from sklearn.linear_model import Ridge
+from sklearn.linear_model import LinearRegression
 from par_10_metric import Par10Metric
 from par_10_regret_metric import Par10RegretMetric
 from simple_runtime_metric import RuntimeMetric
@@ -59,6 +60,8 @@ def create_approach(approach_names):
     for approach_name in approach_names:
         if approach_name == 'degroote_epsilon_greedy':
             approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
+        if approach_name == 'degroote_linear_epsilon_greedy':
+            approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05), regression_model=LinearRegression(n_jobs=1)))
         if approach_name == 'degroote_ucb':
             approaches.append(Degroote(bandit_selection_strategy=UCB(gamma=1)))
         if approach_name == 'feature_free_epsilon_greedy':
