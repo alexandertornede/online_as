@@ -66,7 +66,7 @@ def create_approach(approach_names):
         if approach_name == 'degroote_ucb':
             approaches.append(Degroote(bandit_selection_strategy=UCB(gamma=1)))
         if approach_name == 'cox_regression_expsilon_greedy':
-            approaches.append(CoxRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05), learning_rate=0.01))
+            approaches.append(CoxRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05), learning_rate=0.001))
         if approach_name == 'feature_free_epsilon_greedy':
             approaches.append(FeatureFreeEpsilonGreedy())
         if approach_name == 'sbs':
