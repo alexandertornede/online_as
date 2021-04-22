@@ -2,8 +2,10 @@ import copy
 import logging
 import numpy as np
 import os
+import time
 from aslib_scenario.aslib_scenario import ASlibScenario
 from simple_runtime_metric import RuntimeMetric
+from numpy import ndarray
 
 logger = logging.getLogger("evaluate_train_test_split")
 logger.addHandler(logging.StreamHandler())
@@ -30,14 +32,19 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
     performance_data = scenario.performance_data.to_numpy()
     feature_cost_data = scenario.feature_cost_data.to_numpy() if scenario.feature_cost_data is not None else None
 
+    feature_data, performance_data, feature_cost_data = shuffle_in_unison(feature_data, performance_data, feature_cost_data)
+
     last_instance_id = amount_of_training_instances
     if amount_of_training_instances <= 0:
         last_instance_id = len(scenario.instances)
 
+    start_time = time.time()
     for instance_id in range(0, last_instance_id):
 
-        if instance_id % 100 == 0:
-            logger.info("Starting with instance: " + str(instance_id))
+        if instance_id % 100 == 0 and instance_id > 0:
+            end_time = time.time()
+            logger.info("Starting with instance " + str(instance_id)+ ". Last 100 instances took " + "{:.2f}".format(end_time-start_time) + " s .")
+            start_time = time.time()
 
         X = feature_data[instance_id]
         y = performance_data[instance_id]
@@ -83,3 +90,16 @@ def write_instance_wise_results_to_file(instancewise_result_strings: list, scena
     f = open("output/" + scenario_name + ".arff", "a")
     f.write(complete_instancewise_result_string + "\n")
     f.close()
+
+def shuffle_in_unison(a:ndarray , b:ndarray, c:ndarray):
+    assert len(a) == len(b)
+    assert len(b) == len(c)
+    shuffled_a = np.empty(a.shape, dtype=a.dtype)
+    shuffled_b = np.empty(b.shape, dtype=b.dtype)
+    shuffled_c = np.empty(c.shape, dtype=c.dtype)
+    permutation = np.random.permutation(len(a))
+    for old_index, new_index in enumerate(permutation):
+        shuffled_a[new_index] = a[old_index]
+        shuffled_b[new_index] = b[old_index]
+        shuffled_c[new_index] = c[old_index]
+    return shuffled_a, shuffled_b, shuffled_c

@@ -65,7 +65,7 @@ def create_approach(approach_names):
             approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05), regression_model=LinearRegression(n_jobs=1)))
         if approach_name == 'degroote_ucb':
             approaches.append(Degroote(bandit_selection_strategy=UCB(gamma=1)))
-        if approach_name == 'cox_regression_expsilon_greedy':
+        if approach_name == 'cox_regression_epsilon_greedy':
             approaches.append(CoxRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05), learning_rate=0.001))
         if approach_name == 'feature_free_epsilon_greedy':
             approaches.append(FeatureFreeEpsilonGreedy())
@@ -139,29 +139,28 @@ amount_of_scenario_training_instances = int(
     config["EXPERIMENTS"]["amount_of_training_scenario_instances"])
 # we do not make a train/test split in the online setting as we have no prior training dataset. Accordingly,
 # we only have one fold
-fold = 1
+for fold in range(1,11):
+    for scenario in scenarios:
+        approaches = create_approach(approach_names)
 
-for scenario in scenarios:
-    approaches = create_approach(approach_names)
+        if len(approaches) < 1:
+            logger.error("No approaches recognized!")
+        for approach in approaches:
+            metrics = list()
+            metrics.append(Par10Metric())
+            metrics.append(Par10RegretMetric())
+            metrics.append(RuntimeMetric())
+            if approach.get_name() != 'oracle':
+                metrics.append(NumberUnsolvedInstances(False))
+                metrics.append(NumberUnsolvedInstances(True))
+            logger.info("Submitted pool task for approach \"" +
+                        str(approach.get_name()) + "\" on scenario: " + scenario)
+            # pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
+            #                                           amount_of_scenario_training_instances, fold, config, tune_hyperparameters), callback=log_result)
 
-    if len(approaches) < 1:
-        logger.error("No approaches recognized!")
-    for approach in approaches:
-        metrics = list()
-        metrics.append(Par10Metric())
-        metrics.append(Par10RegretMetric())
-        metrics.append(RuntimeMetric())
-        if approach.get_name() != 'oracle':
-            metrics.append(NumberUnsolvedInstances(False))
-            metrics.append(NumberUnsolvedInstances(True))
-        logger.info("Submitted pool task for approach \"" +
-                    str(approach.get_name()) + "\" on scenario: " + scenario)
-        # pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
-        #                                           amount_of_scenario_training_instances, fold, config, tune_hyperparameters), callback=log_result)
-
-        evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
-                         amount_of_scenario_training_instances, fold, config)
-        print('Finished evaluation of fold')
+            evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
+                             amount_of_scenario_training_instances, fold, config)
+            print('Finished evaluation of fold')
 
 pool.close()
 pool.join()
