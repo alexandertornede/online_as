@@ -20,6 +20,7 @@ from approaches.offline.baselines.satzilla07 import SATzilla07
 from approaches.online.deegrote import Degroote
 from approaches.online.cox_regression import CoxRegression
 from approaches.online.feature_free_epsilon_greedy import FeatureFreeEpsilonGreedy
+from approaches.online.online_linear_regression import OnlineLinearRegression
 from approaches.online.bandit_selection_strategies.ucb import UCB
 from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
 from sklearn.linear_model import Ridge
@@ -59,6 +60,10 @@ def log_result(result):
 def create_approach(approach_names):
     approaches = list()
     for approach_name in approach_names:
+        if approach_name == 'online_linear_regression_epsilon_greedy':
+            approaches.append(OnlineLinearRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
+        if approach_name == 'online_linear_regression_ucb':
+            approaches.append(OnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1)))
         if approach_name == 'degroote_epsilon_greedy':
             approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
         if approach_name == 'degroote_linear_epsilon_greedy':
@@ -156,7 +161,7 @@ for fold in range(1,11):
             logger.info("Submitted pool task for approach \"" +
                         str(approach.get_name()) + "\" on scenario: " + scenario)
             # pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
-            #                                           amount_of_scenario_training_instances, fold, config, tune_hyperparameters), callback=log_result)
+            #                                           amount_of_scenario_training_instances, fold, config), callback=log_result)
 
             evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
                              amount_of_scenario_training_instances, fold, config)

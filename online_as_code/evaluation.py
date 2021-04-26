@@ -3,7 +3,6 @@ import numpy as np
 import logging
 import database_utils
 from evaluation_of_train_test_split import evaluate_train_test_split
-from hyperparameter_optimizer import HyperParameterOptimizer
 
 logger = logging.getLogger("evaluation")
 logger.addHandler(logging.StreamHandler())

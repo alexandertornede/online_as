@@ -93,13 +93,18 @@ def write_instance_wise_results_to_file(instancewise_result_strings: list, scena
 
 def shuffle_in_unison(a:ndarray , b:ndarray, c:ndarray):
     assert len(a) == len(b)
-    assert len(b) == len(c)
+    if c is not None:
+        assert len(b) == len(c)
     shuffled_a = np.empty(a.shape, dtype=a.dtype)
     shuffled_b = np.empty(b.shape, dtype=b.dtype)
-    shuffled_c = np.empty(c.shape, dtype=c.dtype)
+    if c is not None:
+        shuffled_c = np.empty(c.shape, dtype=c.dtype)
     permutation = np.random.permutation(len(a))
     for old_index, new_index in enumerate(permutation):
         shuffled_a[new_index] = a[old_index]
         shuffled_b[new_index] = b[old_index]
-        shuffled_c[new_index] = c[old_index]
+        if c is not None:
+            shuffled_c[new_index] = c[old_index]
+    if c is None:
+        return shuffled_a, shuffled_b, c
     return shuffled_a, shuffled_b, shuffled_c
