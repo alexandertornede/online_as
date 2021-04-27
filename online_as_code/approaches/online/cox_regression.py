@@ -13,7 +13,7 @@ import logging
 from approaches.online.step_function import StepFunction
 
 logger = logging.getLogger("cox_regression")
-logger.addHandler(logging.StreamHandler())
+# logger.addHandler(logging.StreamHandler())
 
 class CoxRegression:
 
@@ -48,10 +48,11 @@ class CoxRegression:
             self.found_non_nan_training_sample = True
 
         #initialize weight vectors randomly if not done yet
-        if self.current_weight_map is None and self.found_non_nan_training_sample:
-            self.current_weight_map = dict()
-            for algorithm_id in range(self.number_of_algorithms):
-                self.current_weight_map[algorithm_id] = np.random.rand(len(features))
+        if self.found_non_nan_training_sample:
+            if self.current_weight_map is None:
+                self.current_weight_map = dict()
+                for algorithm_id in range(self.number_of_algorithms):
+                    self.current_weight_map[algorithm_id] = np.random.rand(len(features))
             #store new training sample only if we have found one non-nan sample before as the risk sets break otherwise
             self.current_training_X_map[algorithm_id].append(features)
             self.all_training_samples.append(features)
@@ -76,35 +77,45 @@ class CoxRegression:
             #perform weight update
             #note that we only need to update the weights if the sample does not feature a timeout, otherwise we only need to update the risk sets
             gradient = 0
+
+            np.seterr(divide="raise", invalid="raise")
+
             if not is_censored_sample:
                 #compute gradient
                 risk_set = self.compute_risk_set_for_instance_in_algorithm_dataset(algorithm_id, performance)
+                logger.debug("w: " + str(weight_vector_to_update))
+                logger.debug("risk_set: " + str(risk_set))
                 denominator = np.sum(np.asarray(list(map(lambda instance: math.exp(self.scalar_product(instance, weight_vector_to_update)), risk_set))))
+                # print(denominator)
                 nominator = np.sum(np.asarray(list(map(lambda instance:  math.exp(self.scalar_product(instance, weight_vector_to_update)) * instance, risk_set))), axis=0).flatten()
+                # print(nominator)
                 gradient = -(new_sample - nominator/denominator)
+                logger.debug("gradient: " + str(algorithm_id) + ": " + str(gradient))
 
                 #perform gradient step
                 self.current_weight_map[algorithm_id] = (weight_vector_to_update - self.learning_rate*gradient)
                 logger.debug("update: " + str(algorithm_id) + ": " + str(self.current_weight_map[algorithm_id]))
+
+    def compute_risk_set_for_instance_in_algorithm_dataset(self, algorithm_id: int, performance:float):
+        X = self.current_training_X_transformed_map[algorithm_id]
+        y = np.asarray(self.current_training_y_map[algorithm_id])
+        # y = np.where(y > self.cutoff_time, self.cutoff_time, y)
+
+        mask_for_risk_set_elements = y >= min(performance, self.cutoff_time)
+        risk_set = list()
+        for index, value in enumerate(mask_for_risk_set_elements):
+            if value:
+                risk_set.append(X[index])
+
+        if len(risk_set) == 0:
+            logger.error("risk set is empty")
+        return risk_set
 
     def scalar_product(self, vector1: ndarray, vector2: ndarray):
         scalar_product = np.dot(vector1, vector2)
         if scalar_product == 0:
             return 0
         return scalar_product #/(np.linalg.norm(vector1)*np.linalg.norm(vector2))
-
-    def compute_risk_set_for_instance_in_algorithm_dataset(self, algorithm_id: int, performance:float):
-        X = self.current_training_X_transformed_map[algorithm_id]
-        y = np.asarray(self.current_training_y_map[algorithm_id])
-        y = np.where(y > self.cutoff_time, self.cutoff_time, y)
-
-        indices_of_risk_set_elements = np.argwhere(y >= min(performance, self.cutoff_time))[0]
-
-        risk_set = list()
-        for i in indices_of_risk_set_elements:
-            risk_set.append(X[i])
-
-        return risk_set
 
 
     def compute_baseline_survival_function(self, algorithm_id: int, timestep: float):
@@ -162,7 +173,6 @@ class CoxRegression:
         return len(self.current_training_X_map[algorithm_id]) > 0 and self.found_non_nan_training_sample
 
     def predict(self, features: ndarray, instance_id: int):
-        logger.debug("instance_id: " + str(len(self.all_training_samples)))
         predicted_performances = list()
         current_standard_deviation = list()
 
@@ -180,7 +190,7 @@ class CoxRegression:
             for algorithm_id in range(self.number_of_algorithms):
                 predicted_performances.append(-1)
 
-        logger.debug("pred_performances:" + str(predicted_performances))
+        logger.info("instance_id: " + str(instance_id) + " - pred_performances:" + str(predicted_performances))
         return self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), np.asarray(current_standard_deviation))
 
     def get_name(self):
