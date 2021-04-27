@@ -34,6 +34,7 @@ class CoxRegression:
         self.current_training_y_map = dict()
         self.current_weight_map = None
         self.found_non_nan_training_sample = False
+        self.precomputed_baseline_survival_functions = dict()
 
         self.trained_preprocessing_pipeline = clone(self.raw_preprocessing_pipeline)
 
@@ -70,6 +71,7 @@ class CoxRegression:
             self.current_training_X_transformed_map[algorithm_id].append(new_sample)
             is_censored_sample = self.is_time_censored(performance)
 
+
             #obtain weight vector of algorithm to update
             weight_vector_to_update = self.current_weight_map[algorithm_id]
 
@@ -96,6 +98,19 @@ class CoxRegression:
                 self.current_weight_map[algorithm_id] = (weight_vector_to_update - self.learning_rate*gradient)
                 logger.debug("update: " + str(algorithm_id) + ": " + str(self.current_weight_map[algorithm_id]))
 
+            self.precompute_baseline_survival_function(algorithm_id=algorithm_id)
+
+
+    def precompute_baseline_survival_function(self, algorithm_id:int):
+        y = self.current_training_y_map[algorithm_id].copy()
+        y.append(0)
+        y.append(self.cutoff_time)
+        y = list(set(y))
+
+        times = np.sort(np.asarray(y))
+        survival_times = np.asarray(list(map(lambda time: self.compute_baseline_survival_function(algorithm_id=algorithm_id, timestep=time, use_precomputed_function=False), times)))
+        self.precomputed_baseline_survival_functions[algorithm_id] = StepFunction(times, survival_times)
+
     def compute_risk_set_for_instance_in_algorithm_dataset(self, algorithm_id: int, performance:float):
         X = self.current_training_X_transformed_map[algorithm_id]
         y = np.asarray(self.current_training_y_map[algorithm_id])
@@ -118,7 +133,10 @@ class CoxRegression:
         return scalar_product #/(np.linalg.norm(vector1)*np.linalg.norm(vector2))
 
 
-    def compute_baseline_survival_function(self, algorithm_id: int, timestep: float):
+    def compute_baseline_survival_function(self, algorithm_id: int, timestep: float, use_precomputed_function:bool = True):
+        if use_precomputed_function:
+            return self.precomputed_baseline_survival_functions[algorithm_id].get_value(timestep)
+
         y = self.current_training_y_map[algorithm_id]
         weight_vector = self.current_weight_map[algorithm_id]
 
@@ -131,15 +149,11 @@ class CoxRegression:
         return math.exp(-sum)
 
     def compute_survival_function(self, algorithm_id: int, instance: ndarray, timestep: float):
-        # print("instance:" + str(instance))
         weight_vector = self.current_weight_map[algorithm_id]
-        #print("weight_vector:" + str(weight_vector))
+        # baseline_survival_function_value = self.compute_baseline_survival_function(algorithm_id=algorithm_id, timestep=timestep) #TODO
         baseline_survival_function_value = self.compute_baseline_survival_function(algorithm_id=algorithm_id, timestep=timestep)
-        #print("baseline_survival_function:" + str(baseline_survival_function_value))
         weight_vector_instance_dot_product = self.scalar_product(weight_vector, instance)
-        #print("weight product:" + str(weight_vector_instance_dot_product))
         exponent = math.exp(weight_vector_instance_dot_product)
-        #print("exp:" +str(exponent))
         result = math.pow(baseline_survival_function_value, exponent)
         if result > 1 or result < 0:
             logger.error("fail")
