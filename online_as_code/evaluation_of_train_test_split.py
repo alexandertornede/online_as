@@ -4,7 +4,7 @@ import numpy as np
 import os
 import time
 from aslib_scenario.aslib_scenario import ASlibScenario
-from simple_runtime_metric import RuntimeMetric
+from par_10_regret_metric import Par10RegretMetric
 from numpy import ndarray
 
 logger = logging.getLogger("evaluate_train_test_split")
@@ -78,6 +78,9 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
     approach_metric_values = np.true_divide(approach_metric_values, num_counted_test_values)
 
     for i, metric in enumerate(metrics):
+        #make sure that the regret is not averaged across instances
+        if metric.get_name() == Par10RegretMetric().get_name():
+            approach_metric_values[i] = approach_metric_values[i]*num_counted_test_values
         print(metrics[i].get_name() + ': {0:.10f}'.format(approach_metric_values[i]))
 
     return approach_metric_values
