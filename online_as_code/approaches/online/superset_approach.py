@@ -8,23 +8,22 @@ from approaches.online.bandit_selection_strategies.ucb import UCB
 import math
 import logging
 
-logger = logging.getLogger("cox_regression")
+logger = logging.getLogger("superset_approach")
 logger.addHandler(logging.StreamHandler())
 
-#https://arxiv.org/pdf/1003.0146.pdf
+# assumes that timeout values have a performance of 10*C
+class SupersetApproach:
 
-class OnlineLinearRegression:
-
-    def __init__(self, bandit_selection_strategy):
+    def __init__(self, bandit_selection_strategy, learning_rate: float):
         self.bandit_selection_strategy = bandit_selection_strategy
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
+        self.learning_rate = learning_rate
 
     def initialize(self, number_of_algorithms: int, cutoff_time: float):
         self.number_of_algorithms = number_of_algorithms
         self.cutoff_time = cutoff_time
-        self.current_A_map = None
-        self.current_b_map = None
+        self.current_weight_map = None
         self.data_for_algorithm = None
         self.maximum_feature_values = None
         self.minimum_feature_values = None
@@ -33,13 +32,11 @@ class OnlineLinearRegression:
 
     def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float):
         #initialize weight vectors randomly if not done yet
-        if self.current_A_map is None:
-            self.current_A_map = dict()
-            self.current_b_map = dict()
+        if self.current_weight_map is None:
+            self.current_weight_map = dict()
             self.data_for_algorithm = dict()
             for algorithm_id in range(self.number_of_algorithms):
-                self.current_A_map[algorithm_id] = np.identity(len(features))
-                self.current_b_map[algorithm_id] = np.zeros(len(features))
+                self.current_A_map[algorithm_id] = np.identity(len(features)) # TODO initialize randomly
                 self.data_for_algorithm[algorithm_id] = False
 
             self.maximum_feature_values = np.full(features.size, -1000000)
@@ -54,11 +51,18 @@ class OnlineLinearRegression:
         self.update_scaler(imputed_sample)
         scaled_sample = self.scale_sample(imputed_sample)
 
-        #TODO REWARD umshapen?
-        reward = 1 - (performance / self.cutoff_time)
+        prediction = np.dot(self.current_weight_map[algorithm_id], scaled_sample)
+        gradient = 0
+        if performance < self.cutoff_time:
+            gradient = 2*(prediction - performance)*scaled_sample
+        elif performance > self.cutoff_time and prediction < self.cutoff_time:
+            gradient = 2*(prediction - self.cutoff_time)*scaled_sample
+        elif performance > self.cutoff_time and prediction >= self.cutoff_time:
+            gradient = 0
 
-        self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample))
-        self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + reward * scaled_sample
+        if gradient > 0:
+            self.current_weight_map[algorithm_id] = self.current_weight_map[algorithm_id] - self.learning_rate*gradient
+
 
     def update_imputer(self, sample: ndarray):
         #iteratively update the mean values of all features
@@ -110,13 +114,8 @@ class OnlineLinearRegression:
         for algorithm_id in range(self.number_of_algorithms):
             #if we have samples for that algorithms
             if self.is_data_for_algorithm_present(algorithm_id):
-                #selection
-                A_inv = np.linalg.inv(self.current_A_map[algorithm_id])
-                theta_head = np.dot(A_inv, self.current_b_map[algorithm_id])
-                estimated_reward = np.dot(theta_head, scaled_sample)
-                confidence_bound_width = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, scaled_sample])) # weight alpha is applied in UCB strategy
-                predicted_performances.append(-estimated_reward)
-                confidence_bound_widths.append(confidence_bound_width)
+
+                performance = np.dot(self.current_weight_map[algorithm_id], scaled_sample)
 
             else:
                 #if not, set its performance to -100 such that it will get pulled for sure
@@ -127,5 +126,5 @@ class OnlineLinearRegression:
         return self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), np.asarray(confidence_bound_widths))
 
     def get_name(self):
-        name = 'online_linear_regression_{}'.format(type(self.bandit_selection_strategy).__name__)
+        name = 'superset_approach_{}'.format(type(self.bandit_selection_strategy).__name__)
         return name

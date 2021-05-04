@@ -54,7 +54,7 @@ class CoxRegression:
         if self.current_weight_map is None:
             self.current_weight_map = dict()
             for algorithm_id in range(self.number_of_algorithms):
-                self.current_weight_map[algorithm_id] = np.random.rand(len(features))
+                self.current_weight_map[algorithm_id] = np.random.rand(len(features)+1) # +1 for bias
 
             self.maximum_feature_values = np.full(features.size, -1000000)
             self.minimum_feature_values = np.full(features.size, +1000000)
@@ -66,6 +66,8 @@ class CoxRegression:
 
         self.update_scaler(imputed_sample)
         scaled_sample = self.scale_sample(imputed_sample)
+
+        scaled_sample = np.append(scaled_sample, values=[1])
         self.add_sample(algorithm_id=algorithm_id, features=scaled_sample, runtime=performance)
 
         #run feature vector of new sample through preprocessing
@@ -142,22 +144,22 @@ class CoxRegression:
         survival_times = np.asarray(list(map(lambda time: self.compute_baseline_survival_function(algorithm_id=algorithm_id, timestep=time, use_precomputed_function=False), times)))
         self.precomputed_baseline_survival_functions[algorithm_id] = StepFunction(times, survival_times)
 
-        if self.number_of_instances_seen == 200:
-            for i in range(0, self.number_of_algorithms):
-                plt.ylabel("Baseline survival function: Algorithm " + str(i))
-                plt.xlabel("Runtime")
-                #plt.ylim(ymax = 10, ymin= 0)
-                plt.legend()
-                plt.grid(True)
-                y = self.current_training_y_map[i].copy()
-                y.append(0)
-                y.append(self.cutoff_time)
-
-                for y_t in y:
-                    value = self.precomputed_baseline_survival_functions[i].get_value(y_t)
-                    print(value)
-                    plt.scatter(y_t, value)
-                plt.show()
+        # if self.number_of_instances_seen == 200:
+        #     for i in range(0, self.number_of_algorithms):
+        #         plt.ylabel("Baseline survival function: Algorithm " + str(i))
+        #         plt.xlabel("Runtime")
+        #         #plt.ylim(ymax = 10, ymin= 0)
+        #         plt.legend()
+        #         plt.grid(True)
+        #         y = self.current_training_y_map[i].copy()
+        #         y.append(0)
+        #         y.append(self.cutoff_time)
+        #
+        #         for y_t in y:
+        #             value = self.precomputed_baseline_survival_functions[i].get_value(y_t)
+        #             print(value)
+        #             plt.scatter(y_t, value)
+        #         plt.show()
 
 
     def compute_risk_set_for_instance_in_algorithm_dataset(self, algorithm_id: int, performance:float):
@@ -241,6 +243,7 @@ class CoxRegression:
 
         if self.current_weight_map is not None:
             preprocessed_instance = self.scale_sample(self.impute_sample(features))
+            preprocessed_instance = np.append(preprocessed_instance, values=[1])
             for algorithm_id in range(self.number_of_algorithms):
                 #if we have samples for that algorithms
                 if self.is_data_for_algorithm_present(algorithm_id):

@@ -39,7 +39,7 @@ def initialize_logging():
     if not os.path.exists('logs'):
         os.makedirs('logs')
     logging.basicConfig(filename='logs/log_file.log', filemode='w',
-                        format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+                        format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
 
 def load_configuration():
