@@ -15,10 +15,11 @@ logger.addHandler(logging.StreamHandler())
 
 class OnlineLinearRegression:
 
-    def __init__(self, bandit_selection_strategy):
+    def __init__(self, bandit_selection_strategy, reward_strategy: str):
         self.bandit_selection_strategy = bandit_selection_strategy
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
+        self.reward_strategy = reward_strategy
 
     def initialize(self, number_of_algorithms: int, cutoff_time: float):
         self.number_of_algorithms = number_of_algorithms
@@ -55,7 +56,37 @@ class OnlineLinearRegression:
         scaled_sample = self.scale_sample(imputed_sample)
 
         #TODO REWARD umshapen?
-        reward = 1 - (performance / self.cutoff_time)
+        if self.reward_strategy == 'optimal_fail':
+            if performance >= self.cutoff_time:
+                reward = -9
+            else:
+                reward = 1 - (performance / self.cutoff_time)
+        elif self.reward_strategy == 'cutoff_scaled':
+            if performance >= self.cutoff_time:
+                reward = 0
+            else:
+                reward = 1 - (performance / self.cutoff_time)
+        elif self.reward_strategy == 'b_j_motivated':
+            if performance >= self.cutoff_time:
+                # pretend that we can estimate the true performance by our model
+                confidence_bound_width, estimated_reward = self.estimate_reward_and_confidence_interval(algorithm_id=algorithm_id, scaled_sample=scaled_sample)
+                estimated_runtime = estimated_reward + np.random.uniform(low=0, high=confidence_bound_width)
+
+                #make sure that the estimate is at most 2*C
+                adapted_estimated_performance = min(estimated_runtime, 2*self.cutoff_time) #2*self.cutoff_time - self.cutoff_time*estimated_runtime #
+                if adapted_estimated_performance < self.cutoff_time:
+                    reward = 0
+                else:
+                    tilde_reward = 1 - adapted_estimated_performance/self.cutoff_time
+                    reward = (tilde_reward + 1)/2
+            else:
+                reward = 1 - (performance / self.cutoff_time)
+        elif self.reward_strategy == 'par10_scaled':
+            if performance >= self.cutoff_time:
+                reward = 0
+            else:
+                reward = 1 - (performance / 10*self.cutoff_time)
+        # print(performance)
 
         self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample))
         self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + reward * scaled_sample
@@ -111,10 +142,8 @@ class OnlineLinearRegression:
             #if we have samples for that algorithms
             if self.is_data_for_algorithm_present(algorithm_id):
                 #selection
-                A_inv = np.linalg.inv(self.current_A_map[algorithm_id])
-                theta_head = np.dot(A_inv, self.current_b_map[algorithm_id])
-                estimated_reward = np.dot(theta_head, scaled_sample)
-                confidence_bound_width = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, scaled_sample])) # weight alpha is applied in UCB strategy
+                confidence_bound_width, estimated_reward = self.estimate_reward_and_confidence_interval(algorithm_id,
+                                                                                                        scaled_sample)
                 predicted_performances.append(-estimated_reward)
                 confidence_bound_widths.append(confidence_bound_width)
 
@@ -124,8 +153,17 @@ class OnlineLinearRegression:
                 confidence_bound_widths.append(100000)
 
         logger.debug("pred_performances:" + str(predicted_performances))
+        logger.debug("confidence_bound_withdts: " + str(confidence_bound_widths))
         return self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), np.asarray(confidence_bound_widths))
 
+    def estimate_reward_and_confidence_interval(self, algorithm_id, scaled_sample):
+        A_inv = np.linalg.inv(self.current_A_map[algorithm_id])
+        theta_head = np.dot(A_inv, self.current_b_map[algorithm_id])
+        estimated_reward = np.dot(theta_head, scaled_sample)
+        confidence_bound_width = math.sqrt(
+            np.linalg.multi_dot([scaled_sample, A_inv, scaled_sample]))  # weight alpha is applied in UCB strategy
+        return confidence_bound_width, estimated_reward
+
     def get_name(self):
-        name = 'online_linear_regression_{}'.format(type(self.bandit_selection_strategy).__name__)
+        name = 'online_linear_regression_{}_{}'.format(self.reward_strategy, type(self.bandit_selection_strategy).__name__)
         return name
