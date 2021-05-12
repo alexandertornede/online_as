@@ -21,6 +21,7 @@ from approaches.online.deegrote import Degroote
 from approaches.online.cox_regression import CoxRegression
 from approaches.online.feature_free_epsilon_greedy import FeatureFreeEpsilonGreedy
 from approaches.online.online_linear_regression import OnlineLinearRegression
+from approaches.online.superset_online_linear_regression import SupersetOnlineLinearRegression
 from approaches.online.bandit_selection_strategies.ucb import UCB
 from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
 from sklearn.linear_model import Ridge
@@ -60,6 +61,8 @@ def log_result(result):
 def create_approach(approach_names):
     approaches = list()
     for approach_name in approach_names:
+        if approach_name == 'superset_online_linear_regression_ucb':
+            approaches.append(SupersetOnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), lambda_param=0.5, alpha=1)) # alpha is essentially gamma
         if approach_name == 'online_linear_regression_epsilon_greedy':
             approaches.append(OnlineLinearRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
         if approach_name == 'online_linear_regression_ucb_multiple_copies':
@@ -162,11 +165,11 @@ for fold in range(1,11):
                 metrics.append(NumberUnsolvedInstances(True))
             logger.info("Submitted pool task for approach \"" +
                         str(approach.get_name()) + "\" on scenario: " + scenario)
-            # pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
-            #                                           amount_of_scenario_training_instances, fold, config), callback=log_result)
+            pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
+                                                      amount_of_scenario_training_instances, fold, config), callback=log_result)
 
-            evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
-                             amount_of_scenario_training_instances, fold, config)
+            # evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
+            #                  amount_of_scenario_training_instances, fold, config)
             print('Finished evaluation of fold')
 
 pool.close()
