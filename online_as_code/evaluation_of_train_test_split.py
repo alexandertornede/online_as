@@ -50,10 +50,11 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
         y = performance_data[instance_id]
 
         # check if instance contains a non-censored value. If not, we will ignore it, as it does not have a ground truth
-        contains_non_censored_value = False
-        for y_element in y:
-            if y_element < scenario.algorithm_cutoff_time:
-                contains_non_censored_value = True
+        # contains_non_censored_value = False
+        # for y_element in y:
+        #     if y_element < scenario.algorithm_cutoff_time:
+        #         contains_non_censored_value = True
+        contains_non_censored_value = True
         if contains_non_censored_value:
 
             # compute feature time

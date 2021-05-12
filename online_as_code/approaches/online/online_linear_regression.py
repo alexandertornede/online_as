@@ -30,6 +30,8 @@ class OnlineLinearRegression:
         self.maximum_feature_values = None
         self.minimum_feature_values = None
         self.mean_feature_values = None
+        self.number_of_timeouts_per_algorithm = None
+        self.number_of_selections_per_algorithm = None
         self.number_of_samples_seen = 0
 
     def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float):
@@ -55,7 +57,8 @@ class OnlineLinearRegression:
         self.update_scaler(imputed_sample)
         scaled_sample = self.scale_sample(imputed_sample)
 
-        #TODO REWARD umshapen?
+        perform_update = True
+
         if self.reward_strategy == 'optimal_fail':
             if performance >= self.cutoff_time:
                 reward = -9
@@ -86,10 +89,32 @@ class OnlineLinearRegression:
                 reward = 0
             else:
                 reward = 1 - (performance / 10*self.cutoff_time)
-        # print(performance)
+        elif self.reward_strategy == 'empirical_timeout_measurement':
+            if performance >= self.cutoff_time:
+                self.number_of_timeouts_per_algorithm[algorithm_id] = self.number_of_timeouts_per_algorithm[algorithm_id] + 1
+                perform_update = False
+            else:
+                reward = 1 - (performance / self.cutoff_time)
 
-        self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample))
-        self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + reward * scaled_sample
+        if self.reward_strategy == 'multiple_copies':
+            if performance >= self.cutoff_time:
+                reward_1 = 0
+                reward_2 = 0.1
+
+                self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample))
+                self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + reward_1 * scaled_sample
+
+                self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample))
+                self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + reward_2 * scaled_sample
+
+            else:
+                reward = 1 - (performance / self.cutoff_time)
+                self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample))
+                self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + reward * scaled_sample
+        else:
+            if perform_update:
+                self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample))
+                self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + reward * scaled_sample
 
     def update_imputer(self, sample: ndarray):
         #iteratively update the mean values of all features
@@ -144,17 +169,41 @@ class OnlineLinearRegression:
                 #selection
                 confidence_bound_width, estimated_reward = self.estimate_reward_and_confidence_interval(algorithm_id,
                                                                                                         scaled_sample)
-                predicted_performances.append(-estimated_reward)
-                confidence_bound_widths.append(confidence_bound_width)
+                if self.reward_strategy == 'empirical_timeout_measurement':
+                    # retransformed_reward = self.cutoff_time*(1-(estimated_reward - confidence_bound_width))
+                    predicted_performances.append(-(estimated_reward - 10*self.get_timeout_probability_of_algorithm(algorithm_id=algorithm_id, instance=scaled_sample)))
+
+                    # we put everything into predicted performances
+                    confidence_bound_widths.append(confidence_bound_width)
+                else:
+                    predicted_performances.append(-estimated_reward)
+                    confidence_bound_widths.append(confidence_bound_width)
 
             else:
                 #if not, set its performance to -100 such that it will get pulled for sure
-                predicted_performances.append(-100)
+                predicted_performances.append(-1000000)
                 confidence_bound_widths.append(100000)
 
         logger.debug("pred_performances:" + str(predicted_performances))
         logger.debug("confidence_bound_withdts: " + str(confidence_bound_widths))
-        return self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), np.asarray(confidence_bound_widths))
+        final_prediction_vector = self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), np.asarray(confidence_bound_widths))
+        selected_algorithm_id = np.argmin(final_prediction_vector)
+
+        if self.number_of_timeouts_per_algorithm is None:
+            self.number_of_timeouts_per_algorithm = dict()
+            self.number_of_selections_per_algorithm = dict()
+            for algorithm_id in range(self.number_of_algorithms):
+                self.number_of_timeouts_per_algorithm[algorithm_id] = 0
+                self.number_of_selections_per_algorithm[algorithm_id] = 0
+
+        self.number_of_selections_per_algorithm[selected_algorithm_id] = self.number_of_selections_per_algorithm[selected_algorithm_id] + 1
+
+        return final_prediction_vector
+
+    def get_timeout_probability_of_algorithm(self, algorithm_id:int, instance: ndarray):
+        if self.number_of_selections_per_algorithm[algorithm_id] > 0:
+            return self.number_of_timeouts_per_algorithm[algorithm_id] / self.number_of_selections_per_algorithm[algorithm_id]
+        return 0
 
     def estimate_reward_and_confidence_interval(self, algorithm_id, scaled_sample):
         A_inv = np.linalg.inv(self.current_A_map[algorithm_id])

@@ -62,8 +62,10 @@ def create_approach(approach_names):
     for approach_name in approach_names:
         if approach_name == 'online_linear_regression_epsilon_greedy':
             approaches.append(OnlineLinearRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
-        if approach_name == 'online_linear_regression_ucb':
-            approaches.append(OnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), reward_strategy='b_j_motivated'))
+        if approach_name == 'online_linear_regression_ucb_multiple_copies':
+            approaches.append(OnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), reward_strategy='multiple_copies'))
+        if approach_name == 'online_linear_regression_ucb_cutoff_scaled':
+            approaches.append(OnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), reward_strategy='cutoff_scaled'))
         if approach_name == 'degroote_epsilon_greedy':
             approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
         if approach_name == 'degroote_linear_epsilon_greedy':
