@@ -62,8 +62,8 @@ class Degroote:
 
         for algorithm_id in range(self.number_of_algorithms):
             # if the model is not fitted yet, just predict the cutoff time
-            prediction = -1
-            standard_deviation = 100000.0
+            prediction = -100000
+            standard_deviation = 1
             if self.is_data_for_algorithm_present(algorithm_id):
                 X_test = np.reshape(features,
                                     (1, len(features)))
@@ -84,9 +84,13 @@ class Degroote:
 
                     X_test_for_standard_deviation = np.vstack([X_train, X_test])
 
-                    variance = fci.random_forest_error(forest=regressor_for_algorithm_id, X_train=X_train, X_test=X_test_for_standard_deviation, calibrate=False)
-                    relevant_variance = variance[len(variance)-1]
-                    logger.debug("std: " + str(relevant_variance))
+                    # we need at least 3 samples such that the package works correctly
+                    if len(X_test_for_standard_deviation) > 2:
+                        variance = fci.random_forest_error(forest=regressor_for_algorithm_id, X_train=X_train, X_test=X_test_for_standard_deviation, calibrate=False)
+                        relevant_variance = variance[len(variance)-1]
+                        logger.debug("std: " + str(relevant_variance))
+                    else:
+                        relevant_variance = self.standard_deviation_lower_bound
 
                     #TODO How to deal with negative standard error?
                     if not math.isnan(relevant_variance):

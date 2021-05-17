@@ -40,7 +40,7 @@ def initialize_logging():
     if not os.path.exists('logs'):
         os.makedirs('logs')
     logging.basicConfig(filename='logs/log_file.log', filemode='w',
-                        format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
+                        format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
 
 def load_configuration():
@@ -149,7 +149,7 @@ amount_of_scenario_training_instances = int(
     config["EXPERIMENTS"]["amount_of_training_scenario_instances"])
 # we do not make a train/test split in the online setting as we have no prior training dataset. Accordingly,
 # we only have one fold
-for fold in range(1,11):
+for fold in range(2,11):
     for scenario in scenarios:
         approaches = create_approach(approach_names)
 
@@ -165,11 +165,11 @@ for fold in range(1,11):
                 metrics.append(NumberUnsolvedInstances(True))
             logger.info("Submitted pool task for approach \"" +
                         str(approach.get_name()) + "\" on scenario: " + scenario)
-            pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
-                                                      amount_of_scenario_training_instances, fold, config), callback=log_result)
+            # pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
+            #                                           amount_of_scenario_training_instances, fold, config), callback=log_result)
 
-            # evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
-            #                  amount_of_scenario_training_instances, fold, config)
+            evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
+                             amount_of_scenario_training_instances, fold, config)
             print('Finished evaluation of fold')
 
 pool.close()
