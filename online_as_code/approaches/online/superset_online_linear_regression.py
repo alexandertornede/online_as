@@ -160,5 +160,5 @@ class SupersetOnlineLinearRegression:
         return final_prediction_vector
 
     def get_name(self):
-        name = 'super_set_online_linear_regression_{}'.format(type(self.bandit_selection_strategy).__name__)
+        name = 'super_set_online_linear_regression_lambda={}_{}'.format(self.lambda_param, type(self.bandit_selection_strategy).__name__)
         return name

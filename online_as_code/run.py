@@ -2,6 +2,7 @@ import logging
 import os
 import configparser
 import multiprocessing as mp
+import numpy as np
 import database_utils
 from evaluation import evaluate_scenario
 from approaches.offline.single_best_solver import SingleBestSolver
@@ -62,6 +63,9 @@ def log_result(result):
 def create_approach(approach_names):
     approaches = list()
     for approach_name in approach_names:
+        if approach_name == 'superset_online_linear_regression_lambda_sensitivity':
+            for lambda_param in np.arange(0.05, 1, 0.05):
+                approaches.append(SupersetOnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), lambda_param=lambda_param, alpha=1))
         if approach_name == 'superset_online_linear_regression_ucb':
             approaches.append(SupersetOnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), lambda_param=0.5, alpha=1)) # alpha is essentially gamma
         if approach_name == 'online_linear_regression_epsilon_greedy':
@@ -148,6 +152,7 @@ path_to_scenario_folder = config["EXPERIMENTS"]["data_folder"]
 approach_names = config["EXPERIMENTS"]["approaches"].split(",")
 amount_of_scenario_training_instances = int(
     config["EXPERIMENTS"]["amount_of_training_scenario_instances"])
+debug_mode = config["EXPERIMENTS"]["debug_mode"] == 'True'
 # we do not make a train/test split in the online setting as we have no prior training dataset. Accordingly,
 # we only have one fold
 for fold in range(1,11):
@@ -167,12 +172,13 @@ for fold in range(1,11):
                 metrics.append(NumberUnsolvedInstances(True))
             logger.info("Submitted pool task for approach \"" +
                         str(approach.get_name()) + "\" on scenario: " + scenario)
-            # pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
-            #                                           amount_of_scenario_training_instances, fold, config), callback=log_result)
-
-            evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
-                             amount_of_scenario_training_instances, fold, config)
-            print('Finished evaluation of fold')
+            if debug_mode:
+                evaluate_scenario(scenario, path_to_scenario_folder, approach, metrics,
+                                  amount_of_scenario_training_instances, fold, config)
+                print('Finished evaluation of fold')
+            else:
+                pool.apply_async(evaluate_scenario, args=(scenario, path_to_scenario_folder, approach, metrics,
+                                                          amount_of_scenario_training_instances, fold, config), callback=log_result)
 
 pool.close()
 pool.join()
