@@ -69,7 +69,13 @@ def get_database_credential_string():
     db_database = db_config_section['database']
     return "mysql://" + db_username + ":" + db_password + "@" + db_host + "/" + db_database
 
+def generate_preliminary_result_table():
+    dataframe = get_dataframe_for_sql_query("SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_standard_all_v2` WHERE metric='par10' GROUP BY scenario_name, approach, metric ORDER BY scenario_name, avg_result")
+    dataframe = dataframe.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
+    print(dataframe.to_latex(index=False, float_format="%.3f"))
+
 #generate_level_N_normalized_par10_table(level=1)
 #generate_normalized_par10_table_normalized_by_level_0()
-generate_sbs_vbs_change_plots(True)
-generate_sbs_vbs_change_plots(False)
+#generate_sbs_vbs_change_plots(True)
+#generate_sbs_vbs_change_plots(False)
+generate_preliminary_result_table()

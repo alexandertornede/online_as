@@ -29,6 +29,7 @@ from sklearn.linear_model import LinearRegression
 from par_10_metric import Par10Metric
 from par_10_regret_metric import Par10RegretMetric
 from simple_runtime_metric import RuntimeMetric
+from learner_runtime_metric import LearnerRuntimeMetric
 from number_unsolved_instances import NumberUnsolvedInstances
 
 
@@ -149,7 +150,7 @@ amount_of_scenario_training_instances = int(
     config["EXPERIMENTS"]["amount_of_training_scenario_instances"])
 # we do not make a train/test split in the online setting as we have no prior training dataset. Accordingly,
 # we only have one fold
-for fold in range(2,11):
+for fold in range(1,11):
     for scenario in scenarios:
         approaches = create_approach(approach_names)
 
@@ -160,6 +161,7 @@ for fold in range(2,11):
             metrics.append(Par10Metric())
             metrics.append(Par10RegretMetric())
             metrics.append(RuntimeMetric())
+            metrics.append(LearnerRuntimeMetric())
             if approach.get_name() != 'oracle':
                 metrics.append(NumberUnsolvedInstances(False))
                 metrics.append(NumberUnsolvedInstances(True))

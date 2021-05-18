@@ -5,6 +5,7 @@ import os
 import time
 from aslib_scenario.aslib_scenario import ASlibScenario
 from par_10_regret_metric import Par10RegretMetric
+from learner_runtime_metric import LearnerRuntimeMetric
 from numpy import ndarray
 
 logger = logging.getLogger("evaluate_train_test_split")
@@ -39,6 +40,7 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
         last_instance_id = len(scenario.instances)
 
     start_time = time.time()
+    total_time = 0
     for instance_id in range(0, last_instance_id):
 
         if instance_id % 100 == 0 and instance_id > 0:
@@ -63,12 +65,18 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
                 feature_time = feature_cost_data[instance_id]
                 accumulated_feature_time = np.sum(feature_time)
 
+            instance_start_time = time.time_ns()
+
             #query prediction from learner
             predicted_scores = approach.predict(X, instance_id)
             predicted_algorithm_id = np.argmin(predicted_scores)
 
             #train learner with new sample
             approach.train_with_single_instance(X, predicted_algorithm_id, y[predicted_algorithm_id])
+
+            instance_end_time = time.time_ns()
+            total_instance_time = instance_end_time - instance_start_time
+            total_time = total_time + total_instance_time
 
             #compute the values of the different metrics
             num_counted_test_values += 1
@@ -82,6 +90,11 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
         #make sure that the regret is not averaged across instances
         if metric.get_name() == Par10RegretMetric().get_name():
             approach_metric_values[i] = approach_metric_values[i]*num_counted_test_values
+
+        #add correct values for learner runtime as these can only be evaluated here
+        if metric.get_name() == LearnerRuntimeMetric().get_name():
+            approach_metric_values[i] = (total_time / num_counted_test_values) / 1000000000 #in seconds
+
         print(metrics[i].get_name() + ': {0:.10f}'.format(approach_metric_values[i]))
 
     return approach_metric_values
