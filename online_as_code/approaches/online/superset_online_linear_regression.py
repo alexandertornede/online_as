@@ -11,16 +11,15 @@ import logging
 logger = logging.getLogger("cox_regression")
 logger.addHandler(logging.StreamHandler())
 
-#https://arxiv.org/pdf/1003.0146.pdf
-
 class SupersetOnlineLinearRegression:
 
-    def __init__(self, bandit_selection_strategy, lambda_param: float, alpha:float):
+    def __init__(self, bandit_selection_strategy, lambda_param: float, alpha:float, C_tilde:float=2):
         self.bandit_selection_strategy = bandit_selection_strategy
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
         self.lambda_param = lambda_param
         self.alpha = alpha
+        self.C_tilde = C_tilde
 
     def initialize(self, number_of_algorithms: int, cutoff_time: float):
         self.number_of_algorithms = number_of_algorithms
@@ -136,11 +135,10 @@ class SupersetOnlineLinearRegression:
                 b = self.current_b_map[algorithm_id]
                 theta_a = np.dot(A_inv, b)
 
-                C_tilde = 2 # TODO
-
                 s = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, self.current_X_map[algorithm_id], A_inv, scaled_sample]))
 
-                l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample) + self.alpha * s, self.cutoff_time))/(C_tilde * self.cutoff_time))
+                #l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), self.cutoff_time))/(self.C_tilde * self.cutoff_time))
+                l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample) + self.alpha * s, self.cutoff_time))/(self.C_tilde * self.cutoff_time))
 
 
                 predicted_performances.append(l_a)
