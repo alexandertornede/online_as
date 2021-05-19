@@ -33,6 +33,7 @@ class SupersetOnlineLinearRegression:
         self.maximum_feature_values = None
         self.minimum_feature_values = None
         self.mean_feature_values = None
+        self.number_of_algorithm_selections_with_timeout = None
         self.number_of_algorithm_selections = None
         self.number_of_samples_seen = 0
 
@@ -45,6 +46,7 @@ class SupersetOnlineLinearRegression:
             self.current_f_map = dict()
             self.current_f_old_map = dict()
             self.data_for_algorithm = dict()
+            self.number_of_algorithm_selections_with_timeout = dict()
             self.number_of_algorithm_selections = dict()
             for algorithm_id in range(self.number_of_algorithms):
                 self.current_A_map[algorithm_id] = np.identity(len(features))
@@ -52,6 +54,7 @@ class SupersetOnlineLinearRegression:
                 self.current_X_map[algorithm_id] = np.zeros((len(features), len(features)))
                 self.current_f_map[algorithm_id] = np.zeros(len(features))
                 self.current_f_old_map[algorithm_id] = np.zeros(len(features))
+                self.number_of_algorithm_selections_with_timeout[algorithm_id] = 0
                 self.number_of_algorithm_selections[algorithm_id] = 0
                 self.data_for_algorithm[algorithm_id] = False
 
@@ -69,15 +72,19 @@ class SupersetOnlineLinearRegression:
         self.update_scaler(imputed_sample)
         scaled_sample = self.scale_sample(imputed_sample)
 
+        self.number_of_algorithm_selections[algorithm_id] = self.number_of_algorithm_selections[algorithm_id] + 1
         if performance >= self.cutoff_time:
-            self.number_of_algorithm_selections[algorithm_id] = self.number_of_algorithm_selections[algorithm_id] + 1
+            self.number_of_algorithm_selections_with_timeout[algorithm_id] = self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1
 
             self.current_f_old_map[algorithm_id] = self.current_f_map[algorithm_id]
-            self.current_f_map[algorithm_id] = (self.number_of_algorithm_selections[algorithm_id] * self.current_f_map[algorithm_id] + scaled_sample)/(self.number_of_algorithm_selections[algorithm_id] + 1)
+            self.current_f_map[algorithm_id] = (self.number_of_algorithm_selections_with_timeout[algorithm_id] * self.current_f_map[algorithm_id] + scaled_sample) / (self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1)
+
+        # lambda_param = self.lambda_param
+        lambda_param = self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
 
         self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample)) \
-                                           + self.lambda_param * (np.outer(self.current_f_old_map[algorithm_id], self.current_f_old_map[algorithm_id]) - np.outer(self.current_f_map[algorithm_id], self.current_f_map[algorithm_id]))
-        self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance * scaled_sample + self.lambda_param*self.cutoff_time*(self.current_f_old_map[algorithm_id] - self.current_f_map[algorithm_id])
+                                           + lambda_param * (np.outer(self.current_f_old_map[algorithm_id], self.current_f_old_map[algorithm_id]) - np.outer(self.current_f_map[algorithm_id], self.current_f_map[algorithm_id]))
+        self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance * scaled_sample + lambda_param*self.cutoff_time*(self.current_f_old_map[algorithm_id] - self.current_f_map[algorithm_id])
         self.current_X_map[algorithm_id] = self.current_X_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
 
     def update_imputer(self, sample: ndarray):
@@ -137,8 +144,10 @@ class SupersetOnlineLinearRegression:
 
                 s = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, self.current_X_map[algorithm_id], A_inv, scaled_sample]))
 
+                s = s * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * 2 * self.cutoff_time
+
                 #l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), self.cutoff_time))/(self.C_tilde * self.cutoff_time))
-                l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample) + self.alpha * s, self.cutoff_time))/(self.C_tilde * self.cutoff_time))
+                l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), self.cutoff_time))/(self.C_tilde * self.cutoff_time))
 
 
                 predicted_performances.append(l_a)
