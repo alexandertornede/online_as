@@ -12,13 +12,13 @@ def generate_superset_vs_linear_plot():
 
     scenario_names = config["EXPERIMENTS"]["scenarios"].split(",")
 
-    dataframe = get_dataframe_for_sql_query("SELECT scenario_name, approach, avg_result FROM `server_results_standard_v2_aggregated` WHERE approach ='super_set_online_linear_regression_UCB' OR approach= 'online_linear_regression_cutoff_scaled_UCB'")
+    dataframe = get_dataframe_for_sql_query("SELECT * FROM (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `bugfix_in_bound_adaptive_lambda` WHERE metric='par10' GROUP BY scenario_name, approach, metric UNION SELECT * FROM `server_results_standard_v2_aggregated`) as T WHERE approach != 'super_set_online_linear_regression_UCB' AND approach NOT LIKE 'degroote%%' ORDER BY scenario_name, avg_result")
 
     y_values = list()
     x_values = list()
     for scenario in scenario_names:
         scenario_results = dataframe.loc[dataframe['scenario_name'] == scenario] # & dataframe['approach'] == 'super_set_online_linear_regression_UCB'
-        super_set_result = scenario_results.loc[scenario_results['approach'] == 'super_set_online_linear_regression_UCB']['avg_result'].values[0]
+        super_set_result = scenario_results.loc[scenario_results['approach'] == 'super_set_online_linear_regression_lambda=0.5_UCB']['avg_result'].values[0]
         lr_result = scenario_results.loc[scenario_results['approach'] == 'online_linear_regression_cutoff_scaled_UCB']['avg_result'].values[0]
         division = super_set_result / lr_result
         y_values.append(division)

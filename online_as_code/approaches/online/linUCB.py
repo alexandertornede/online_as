@@ -8,35 +8,43 @@ from approaches.online.bandit_selection_strategies.ucb import UCB
 import math
 import logging
 
-logger = logging.getLogger("superset_approach")
+logger = logging.getLogger("lin_ucb")
 logger.addHandler(logging.StreamHandler())
 
-# assumes that timeout values have a performance of 10*C
-class SupersetApproach:
+class LinUCBPerformance:
 
-    def __init__(self, bandit_selection_strategy, learning_rate: float):
+    def __init__(self, bandit_selection_strategy, alpha:float):
         self.bandit_selection_strategy = bandit_selection_strategy
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
-        self.learning_rate = learning_rate
+        self.alpha = alpha
 
     def initialize(self, number_of_algorithms: int, cutoff_time: float):
         self.number_of_algorithms = number_of_algorithms
         self.cutoff_time = cutoff_time
-        self.current_weight_map = None
+        self.current_b_map = None
+        self.current_X_map = None
         self.data_for_algorithm = None
         self.maximum_feature_values = None
         self.minimum_feature_values = None
         self.mean_feature_values = None
+        self.number_of_algorithm_selections_with_timeout = None
+        self.number_of_algorithm_selections = None
         self.number_of_samples_seen = 0
 
     def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float):
         #initialize weight vectors randomly if not done yet
-        if self.current_weight_map is None:
-            self.current_weight_map = dict()
+        if self.current_X_map is None:
+            self.current_b_map = dict()
+            self.current_X_map = dict()
             self.data_for_algorithm = dict()
+            self.number_of_algorithm_selections_with_timeout = dict()
+            self.number_of_algorithm_selections = dict()
             for algorithm_id in range(self.number_of_algorithms):
-                self.current_A_map[algorithm_id] = np.identity(len(features)) # TODO initialize randomly
+                self.current_b_map[algorithm_id] = np.zeros(len(features))
+                self.current_X_map[algorithm_id] = np.identity(len(features))
+                self.number_of_algorithm_selections_with_timeout[algorithm_id] = 0
+                self.number_of_algorithm_selections[algorithm_id] = 0
                 self.data_for_algorithm[algorithm_id] = False
 
             self.maximum_feature_values = np.full(features.size, -1000000)
@@ -51,18 +59,13 @@ class SupersetApproach:
         self.update_scaler(imputed_sample)
         scaled_sample = self.scale_sample(imputed_sample)
 
-        prediction = np.dot(self.current_weight_map[algorithm_id], scaled_sample)
-        gradient = 0
-        if performance < self.cutoff_time:
-            gradient = 2*(prediction - performance)*scaled_sample
-        elif performance > self.cutoff_time and prediction < self.cutoff_time:
-            gradient = 2*(prediction - self.cutoff_time)*scaled_sample
-        elif performance > self.cutoff_time and prediction >= self.cutoff_time:
-            gradient = 0
+        self.number_of_algorithm_selections[algorithm_id] = self.number_of_algorithm_selections[algorithm_id] + 1
+        if performance >= self.cutoff_time:
+            self.number_of_algorithm_selections_with_timeout[algorithm_id] = self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1
+            performance = self.cutoff_time
 
-        if gradient > 0:
-            self.current_weight_map[algorithm_id] = self.current_weight_map[algorithm_id] - self.learning_rate*gradient
-
+        self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance * scaled_sample
+        self.current_X_map[algorithm_id] = self.current_X_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
 
     def update_imputer(self, sample: ndarray):
         #iteratively update the mean values of all features
@@ -89,16 +92,17 @@ class SupersetApproach:
         # print(self.minimum_feature_values)
         # print((self.maximum_feature_values - self.minimum_feature_values))
 
-        denominator = (self.maximum_feature_values - self.minimum_feature_values)
-
-        #avoid division by zero => if denimonator is zero in one coordinate, X_std will be 0 anyway
-        denominator[denominator == 0] = 1
-
-        np.seterr(divide="raise", invalid="raise")
-
-        X_std = ((sample - self.minimum_feature_values) / denominator)
-        scaled_sample = X_std * (max - min) + min
-        return np.clip(scaled_sample, a_min=0, a_max=1)
+        # denominator = (self.maximum_feature_values - self.minimum_feature_values)
+        #
+        # #avoid division by zero => if denimonator is zero in one coordinate, X_std will be 0 anyway
+        # denominator[denominator == 0] = 1
+        #
+        # np.seterr(divide="raise", invalid="raise")
+        #
+        # X_std = ((sample - self.minimum_feature_values) / denominator)
+        # scaled_sample = X_std * (max - min) + min
+        # return np.clip(scaled_sample, a_min=0, a_max=1)
+        return sample / np.linalg.norm(sample)
 
     def is_data_for_algorithm_present(self, algorithm_id):
         return self.data_for_algorithm is not None and self.data_for_algorithm[algorithm_id]
@@ -114,17 +118,29 @@ class SupersetApproach:
         for algorithm_id in range(self.number_of_algorithms):
             #if we have samples for that algorithms
             if self.is_data_for_algorithm_present(algorithm_id):
+                #selection
+                X_inv = np.linalg.inv(self.current_X_map[algorithm_id])
+                b = self.current_b_map[algorithm_id]
+                theta_a = np.dot(X_inv, b)
 
-                performance = np.dot(self.current_weight_map[algorithm_id], scaled_sample)
+                s = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) #* math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * self.cutoff_time
+
+                l_a = np.dot(theta_a, scaled_sample) - self.alpha * s
+
+                predicted_performances.append(l_a)
+                confidence_bound_widths.append(0)
 
             else:
                 #if not, set its performance to -100 such that it will get pulled for sure
-                predicted_performances.append(-100)
+                predicted_performances.append(-1000000)
                 confidence_bound_widths.append(100000)
 
         logger.debug("pred_performances:" + str(predicted_performances))
-        return self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), np.asarray(confidence_bound_widths))
+        logger.debug("confidence_bound_withdts: " + str(confidence_bound_widths))
+        final_prediction_vector = self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), np.asarray(confidence_bound_widths))
+
+        return final_prediction_vector
 
     def get_name(self):
-        name = 'superset_approach_{}'.format(type(self.bandit_selection_strategy).__name__)
+        name = 'lin2_{}'.format(type(self.bandit_selection_strategy).__name__)
         return name

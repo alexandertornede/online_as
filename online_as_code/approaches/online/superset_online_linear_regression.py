@@ -7,8 +7,9 @@ from sklearn.pipeline import Pipeline
 from approaches.online.bandit_selection_strategies.ucb import UCB
 import math
 import logging
+from sklearn.preprocessing import PolynomialFeatures
 
-logger = logging.getLogger("cox_regression")
+logger = logging.getLogger("superset_lin_ucb")
 logger.addHandler(logging.StreamHandler())
 
 class SupersetOnlineLinearRegression:
@@ -51,7 +52,7 @@ class SupersetOnlineLinearRegression:
             for algorithm_id in range(self.number_of_algorithms):
                 self.current_A_map[algorithm_id] = np.identity(len(features))
                 self.current_b_map[algorithm_id] = np.zeros(len(features))
-                self.current_X_map[algorithm_id] = np.zeros((len(features), len(features)))
+                self.current_X_map[algorithm_id] = np.identity(len(features))
                 self.current_f_map[algorithm_id] = np.zeros(len(features))
                 self.current_f_old_map[algorithm_id] = np.zeros(len(features))
                 self.number_of_algorithm_selections_with_timeout[algorithm_id] = 0
@@ -74,16 +75,16 @@ class SupersetOnlineLinearRegression:
 
         self.number_of_algorithm_selections[algorithm_id] = self.number_of_algorithm_selections[algorithm_id] + 1
         if performance >= self.cutoff_time:
-            self.number_of_algorithm_selections_with_timeout[algorithm_id] = self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1
-
             self.current_f_old_map[algorithm_id] = self.current_f_map[algorithm_id]
             self.current_f_map[algorithm_id] = (self.number_of_algorithm_selections_with_timeout[algorithm_id] * self.current_f_map[algorithm_id] + scaled_sample) / (self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1)
 
-        # lambda_param = self.lambda_param
-        lambda_param = self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
+            self.number_of_algorithm_selections_with_timeout[algorithm_id] = self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1
+            performance = self.cutoff_time
 
-        self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample)) \
-                                           + lambda_param * (np.outer(self.current_f_old_map[algorithm_id], self.current_f_old_map[algorithm_id]) - np.outer(self.current_f_map[algorithm_id], self.current_f_map[algorithm_id]))
+        lambda_param = self.lambda_param
+        #lambda_param = self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
+
+        self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample)) + lambda_param * (np.outer(self.current_f_old_map[algorithm_id], self.current_f_old_map[algorithm_id]) - np.outer(self.current_f_map[algorithm_id], self.current_f_map[algorithm_id]))
         self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance * scaled_sample + lambda_param*self.cutoff_time*(self.current_f_old_map[algorithm_id] - self.current_f_map[algorithm_id])
         self.current_X_map[algorithm_id] = self.current_X_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
 
@@ -104,24 +105,26 @@ class SupersetOnlineLinearRegression:
         self.maximum_feature_values = np.maximum(self.maximum_feature_values, sample)
 
     def scale_sample(self, sample: ndarray):
+
         # min-max scaling
-        max = 1
-        min = 0
-        # print("sample" + str(sample))
-        # print(self.maximum_feature_values)
-        # print(self.minimum_feature_values)
-        # print((self.maximum_feature_values - self.minimum_feature_values))
-
-        denominator = (self.maximum_feature_values - self.minimum_feature_values)
-
-        #avoid division by zero => if denimonator is zero in one coordinate, X_std will be 0 anyway
-        denominator[denominator == 0] = 1
-
-        np.seterr(divide="raise", invalid="raise")
-
-        X_std = ((sample - self.minimum_feature_values) / denominator)
-        scaled_sample = X_std * (max - min) + min
-        return np.clip(scaled_sample, a_min=0, a_max=1)
+        # max = 1
+        # min = 0
+        # # print("sample" + str(sample))
+        # # print(self.maximum_feature_values)
+        # # print(self.minimum_feature_values)
+        # # print((self.maximum_feature_values - self.minimum_feature_values))
+        #
+        # denominator = (self.maximum_feature_values - self.minimum_feature_values)
+        #
+        # #avoid division by zero => if denimonator is zero in one coordinate, X_std will be 0 anyway
+        # denominator[denominator == 0] = 1
+        #
+        # np.seterr(divide="raise", invalid="raise")
+        #
+        # X_std = ((sample - self.minimum_feature_values) / denominator)
+        # scaled_sample = X_std * (max - min) + min
+        # return np.clip(scaled_sample, a_min=0, a_max=1)
+        return sample/np.linalg.norm(sample)
 
     def is_data_for_algorithm_present(self, algorithm_id):
         return self.data_for_algorithm is not None and self.data_for_algorithm[algorithm_id]
@@ -142,12 +145,18 @@ class SupersetOnlineLinearRegression:
                 b = self.current_b_map[algorithm_id]
                 theta_a = np.dot(A_inv, b)
 
-                s = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, self.current_X_map[algorithm_id], A_inv, scaled_sample]))
+                s = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, self.current_X_map[algorithm_id], A_inv, scaled_sample])) # * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * self.cutoff_time
 
-                s = s * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * 2 * self.cutoff_time
+                predicted_performance = np.dot(theta_a, scaled_sample)
+                bound = self.alpha * s
+                #probability_term = (10*self.cutoff_time - np.dot(theta_a, scaled_sample))*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), self.cutoff_time))/(self.C_tilde * self.cutoff_time))
+                #probability_term = max(0,1 - (self.cutoff_time - min(max(0, predicted_performance), self.cutoff_time))/self.cutoff_time) #self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
 
                 #l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), self.cutoff_time))/(self.C_tilde * self.cutoff_time))
-                l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), self.cutoff_time))/(self.C_tilde * self.cutoff_time))
+                # if probability_term < 0:
+                #     l_a = predicted_performance
+                # else:
+                l_a = predicted_performance - bound #+ probability_term*10*self.cutoff_time
 
 
                 predicted_performances.append(l_a)
@@ -167,5 +176,5 @@ class SupersetOnlineLinearRegression:
         return final_prediction_vector
 
     def get_name(self):
-        name = 'super_set_online_linear_regression_lambda={}_{}'.format(self.lambda_param, type(self.bandit_selection_strategy).__name__)
+        name = 'super_set_online_linear_regression_lambda={}_Ctilde={}_{}'.format(self.lambda_param, self.C_tilde, type(self.bandit_selection_strategy).__name__)
         return name

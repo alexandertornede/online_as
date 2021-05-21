@@ -58,6 +58,8 @@ class OnlineLinearRegression:
         scaled_sample = self.scale_sample(imputed_sample)
 
         perform_update = True
+        if performance >= self.cutoff_time:
+            self.number_of_timeouts_per_algorithm[algorithm_id] = self.number_of_timeouts_per_algorithm[algorithm_id] + 1
 
         if self.reward_strategy == 'optimal_fail':
             if performance >= self.cutoff_time:
@@ -91,7 +93,6 @@ class OnlineLinearRegression:
                 reward = 1 - (performance / 10*self.cutoff_time)
         elif self.reward_strategy == 'empirical_timeout_measurement':
             if performance >= self.cutoff_time:
-                self.number_of_timeouts_per_algorithm[algorithm_id] = self.number_of_timeouts_per_algorithm[algorithm_id] + 1
                 perform_update = False
             else:
                 reward = 1 - (performance / self.cutoff_time)
@@ -141,16 +142,17 @@ class OnlineLinearRegression:
         # print(self.minimum_feature_values)
         # print((self.maximum_feature_values - self.minimum_feature_values))
 
-        denominator = (self.maximum_feature_values - self.minimum_feature_values)
-
-        #avoid division by zero => if denimonator is zero in one coordinate, X_std will be 0 anyway
-        denominator[denominator == 0] = 1
-
-        np.seterr(divide="raise", invalid="raise")
-
-        X_std = ((sample - self.minimum_feature_values) / denominator)
-        scaled_sample = X_std * (max - min) + min
-        return np.clip(scaled_sample, a_min=0, a_max=1)
+        # denominator = (self.maximum_feature_values - self.minimum_feature_values)
+        #
+        # #avoid division by zero => if denimonator is zero in one coordinate, X_std will be 0 anyway
+        # denominator[denominator == 0] = 1
+        #
+        # np.seterr(divide="raise", invalid="raise")
+        #
+        # X_std = ((sample - self.minimum_feature_values) / denominator)
+        # scaled_sample = X_std * (max - min) + min
+        # return np.clip(scaled_sample, a_min=0, a_max=1)
+        return sample/np.linalg.norm(sample)
 
     def is_data_for_algorithm_present(self, algorithm_id):
         return self.data_for_algorithm is not None and self.data_for_algorithm[algorithm_id]
@@ -210,7 +212,7 @@ class OnlineLinearRegression:
         theta_head = np.dot(A_inv, self.current_b_map[algorithm_id])
         estimated_reward = np.dot(theta_head, scaled_sample)
         confidence_bound_width = math.sqrt(
-            np.linalg.multi_dot([scaled_sample, A_inv, scaled_sample]))  # weight alpha is applied in UCB strategy
+            np.linalg.multi_dot([scaled_sample, A_inv, scaled_sample]))*math.sqrt(self.number_of_timeouts_per_algorithm[algorithm_id])*2  # weight alpha is applied in UCB strategy #TODO: *sqrt(N_c)*2
         return confidence_bound_width, estimated_reward
 
     def get_name(self):
