@@ -22,9 +22,8 @@ class SupersetOnlineLinearRegression:
         self.alpha = alpha
         self.C_tilde = C_tilde
 
-    def initialize(self, number_of_algorithms: int, cutoff_time: float):
+    def initialize(self, number_of_algorithms: int):
         self.number_of_algorithms = number_of_algorithms
-        self.cutoff_time = cutoff_time
         self.current_A_map = None
         self.current_b_map = None
         self.current_X_map = None
@@ -38,7 +37,7 @@ class SupersetOnlineLinearRegression:
         self.number_of_algorithm_selections = None
         self.number_of_samples_seen = 0
 
-    def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float):
+    def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float, cutoff_time:float):
         #initialize weight vectors randomly if not done yet
         if self.current_A_map is None:
             self.current_A_map = dict()
@@ -74,18 +73,18 @@ class SupersetOnlineLinearRegression:
         scaled_sample = self.scale_sample(imputed_sample)
 
         self.number_of_algorithm_selections[algorithm_id] = self.number_of_algorithm_selections[algorithm_id] + 1
-        if performance >= self.cutoff_time:
+        if performance >= cutoff_time:
             self.current_f_old_map[algorithm_id] = self.current_f_map[algorithm_id]
             self.current_f_map[algorithm_id] = (self.number_of_algorithm_selections_with_timeout[algorithm_id] * self.current_f_map[algorithm_id] + scaled_sample) / (self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1)
 
             self.number_of_algorithm_selections_with_timeout[algorithm_id] = self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1
-            performance = self.cutoff_time
+            performance = cutoff_time
 
         lambda_param = self.lambda_param
         #lambda_param = self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
 
         self.current_A_map[algorithm_id] = np.add(self.current_A_map[algorithm_id], np.outer(scaled_sample, scaled_sample)) + lambda_param * (np.outer(self.current_f_old_map[algorithm_id], self.current_f_old_map[algorithm_id]) - np.outer(self.current_f_map[algorithm_id], self.current_f_map[algorithm_id]))
-        self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance * scaled_sample + lambda_param*self.cutoff_time*(self.current_f_old_map[algorithm_id] - self.current_f_map[algorithm_id])
+        self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance * scaled_sample + lambda_param*cutoff_time*(self.current_f_old_map[algorithm_id] - self.current_f_map[algorithm_id])
         self.current_X_map[algorithm_id] = self.current_X_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
 
     def update_imputer(self, sample: ndarray):
@@ -129,7 +128,7 @@ class SupersetOnlineLinearRegression:
     def is_data_for_algorithm_present(self, algorithm_id):
         return self.data_for_algorithm is not None and self.data_for_algorithm[algorithm_id]
 
-    def predict(self, features: ndarray, instance_id: int):
+    def predict(self, features: ndarray, instance_id: int, cutoff_time: float):
         logger.debug("instance_id: " + str(len(self.all_training_samples)))
         predicted_performances = list()
         confidence_bound_widths = list()
@@ -145,18 +144,18 @@ class SupersetOnlineLinearRegression:
                 b = self.current_b_map[algorithm_id]
                 theta_a = np.dot(A_inv, b)
 
-                s = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, self.current_X_map[algorithm_id], A_inv, scaled_sample])) # * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * self.cutoff_time
+                s = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, self.current_X_map[algorithm_id], A_inv, scaled_sample])) # * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * cutoff_time
 
                 predicted_performance = np.dot(theta_a, scaled_sample)
                 bound = self.alpha * s
-                #probability_term = (10*self.cutoff_time - np.dot(theta_a, scaled_sample))*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), self.cutoff_time))/(self.C_tilde * self.cutoff_time))
-                #probability_term = max(0,1 - (self.cutoff_time - min(max(0, predicted_performance), self.cutoff_time))/self.cutoff_time) #self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
+                #probability_term = (10*cutoff_time - np.dot(theta_a, scaled_sample))*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), cutoff_time))/(self.C_tilde * cutoff_time))
+                probability_term = max(0,1 - (cutoff_time - min(max(0, predicted_performance), cutoff_time))/cutoff_time) #self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
 
-                #l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*self.cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), self.cutoff_time))/(self.C_tilde * self.cutoff_time))
+                #l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), cutoff_time))/(self.C_tilde * cutoff_time))
                 # if probability_term < 0:
                 #     l_a = predicted_performance
                 # else:
-                l_a = predicted_performance - bound #+ probability_term*10*self.cutoff_time
+                l_a = (1 - probability_term) * (predicted_performance - bound) + probability_term*10*cutoff_time
 
 
                 predicted_performances.append(l_a)

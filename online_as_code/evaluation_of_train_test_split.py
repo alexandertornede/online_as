@@ -23,7 +23,7 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
         elif censored_value_imputation == 'ignore_censored':
             scenario.performance_data = scenario.performance_data.replace(10*threshold, np.nan)
 
-    approach.initialize(len(scenario.algorithms), scenario.algorithm_cutoff_time)
+    approach.initialize(len(scenario.algorithms))
 
     approach_metric_values = np.zeros(len(metrics))
 
@@ -65,14 +65,26 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
                 feature_time = feature_cost_data[instance_id]
                 accumulated_feature_time = np.sum(feature_time)
 
+            #initialize instance cutoff as a random value between the best and the worst algorithm
+            non_censored_y_values = y[np.where(y < scenario.algorithm_cutoff_time)]
+
+            if len(non_censored_y_values) == 0:
+                upper_instance_cutoff_bound = scenario.algorithm_cutoff_time
+                lower_instance_cutoff_bound = 0
+            else:
+                upper_instance_cutoff_bound = np.max(non_censored_y_values)
+                lower_instance_cutoff_bound = np.min(non_censored_y_values)
+
+            instance_cutoff = np.random.uniform(low=lower_instance_cutoff_bound, high=upper_instance_cutoff_bound)
+
             instance_start_time = time.time_ns()
 
             #query prediction from learner
-            predicted_scores = approach.predict(X, instance_id)
+            predicted_scores = approach.predict(X, instance_id, instance_cutoff)
             predicted_algorithm_id = np.argmin(predicted_scores)
 
             #train learner with new sample
-            approach.train_with_single_instance(X, predicted_algorithm_id, y[predicted_algorithm_id])
+            approach.train_with_single_instance(X, predicted_algorithm_id, y[predicted_algorithm_id], instance_cutoff)
 
             instance_end_time = time.time_ns()
             total_instance_time = instance_end_time - instance_start_time
@@ -81,7 +93,7 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
             #compute the values of the different metrics
             num_counted_test_values += 1
             for i, metric in enumerate(metrics):
-                metric_result = metric.evaluate(y, predicted_scores, accumulated_feature_time, scenario.algorithm_cutoff_time)
+                metric_result = metric.evaluate(y, predicted_scores, accumulated_feature_time, instance_cutoff)
                 approach_metric_values[i] = (approach_metric_values[i] + metric_result)
 
     approach_metric_values = np.true_divide(approach_metric_values, num_counted_test_values)
