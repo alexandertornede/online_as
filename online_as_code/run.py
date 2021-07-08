@@ -27,6 +27,7 @@ from approaches.online.bandit_selection_strategies.ucb import UCB
 from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
 from approaches.online.linUCB import LinUCBPerformance
 from approaches.online.superset_co import SupersetConstrainedOptimization
+from approaches.online.thompson import Thompson
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
 from par_10_metric import Par10Metric
@@ -65,15 +66,19 @@ def log_result(result):
 def create_approach(approach_names):
     approaches = list()
     for approach_name in approach_names:
+        if approach_name == 'thompson':
+            approaches.append(Thompson(sigma=1, lamda=0.5))
         if approach_name == 'superset_co':
             approaches.append(SupersetConstrainedOptimization(bandit_selection_strategy=UCB(gamma=1), alpha=1, C_tilde=2))
         if approach_name == 'superset_online_linear_regression_lambda_sensitivity':
             for lambda_param in np.arange(0.00, 1, 0.2):
                 approaches.append(SupersetOnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), lambda_param=lambda_param, alpha=1, C_tilde=2))
         if approach_name == 'superset_online_linear_regression_ucb':
-            approaches.append(SupersetOnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), lambda_param=0.2, alpha=1, C_tilde=2)) # alpha is essentially gamma
+            approaches.append(SupersetOnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), lambda_param=0.5, alpha=1, C_tilde=2)) # alpha is essentially gamma
         if approach_name == 'lin_ucb':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False))
+        if approach_name == 'lin_ucb_new_tricks':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True))
         if approach_name == 'online_linear_regression_epsilon_greedy':
             approaches.append(OnlineLinearRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
         if approach_name == 'online_linear_regression_ucb_multiple_copies':

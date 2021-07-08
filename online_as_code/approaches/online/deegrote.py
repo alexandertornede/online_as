@@ -21,9 +21,8 @@ class Degroote:
         self.bandit_selection_strategy = bandit_selection_strategy
         self.standard_deviation_lower_bound = standard_deviation_lower_bound
 
-    def initialize(self, number_of_algorithms: int, cutoff_time: float):
+    def initialize(self, number_of_algorithms: int):
         self.number_of_algorithms = number_of_algorithms
-        self.cutoff_time = cutoff_time
         self.current_training_X_map = dict()
         self.current_training_y_map = dict()
         self.trained_models_map = dict()
@@ -35,7 +34,7 @@ class Degroote:
             self.current_training_y_map[algorithm_index] = list()
             self.non_nan_training_sample_checking_map[algorithm_index] = False
 
-    def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float):
+    def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float, cutoff_time: float):
         #store new training sample
         self.current_training_X_map[algorithm_id].append(features)
         self.current_training_y_map[algorithm_id].append(performance)
@@ -56,7 +55,7 @@ class Degroote:
     def is_data_for_algorithm_present(self, algorithm_id):
         return len(self.current_training_X_map[algorithm_id]) > 0 and self.non_nan_training_sample_checking_map[algorithm_id]
 
-    def predict(self, features: ndarray, instance_id: int):
+    def predict(self, features: ndarray, instance_id: int, cutoff_time: float):
         predicted_performances = list()
         current_standard_deviation = list()
 

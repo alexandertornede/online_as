@@ -19,10 +19,10 @@ class FeatureFreeEpsilonGreedy:
         for algorithm_index in range(number_of_algorithms):
             self.performances_map[algorithm_index] = list()
 
-    def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float):
+    def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float, cutoff_time:float):
         self.performances_map[algorithm_id].append(performance)
 
-    def predict(self, features: ndarray, instance_id: int):
+    def predict(self, features: ndarray, instance_id: int, cutoff_time:float):
         predicted_performances = list()
 
         for algorithm_id in range(self.number_of_algorithms):

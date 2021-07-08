@@ -66,16 +66,17 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
                 accumulated_feature_time = np.sum(feature_time)
 
             #initialize instance cutoff as a random value between the best and the worst algorithm
-            non_censored_y_values = y[np.where(y < scenario.algorithm_cutoff_time)]
+            # non_censored_y_values = y[np.where(y < scenario.algorithm_cutoff_time)]
+            #
+            # if len(non_censored_y_values) == 0:
+            #     upper_instance_cutoff_bound = scenario.algorithm_cutoff_time
+            #     lower_instance_cutoff_bound = 0
+            # else:
+            #     upper_instance_cutoff_bound = np.max(non_censored_y_values)
+            #     lower_instance_cutoff_bound = np.min(non_censored_y_values)
 
-            if len(non_censored_y_values) == 0:
-                upper_instance_cutoff_bound = scenario.algorithm_cutoff_time
-                lower_instance_cutoff_bound = 0
-            else:
-                upper_instance_cutoff_bound = np.max(non_censored_y_values)
-                lower_instance_cutoff_bound = np.min(non_censored_y_values)
-
-            instance_cutoff = np.random.uniform(low=lower_instance_cutoff_bound, high=upper_instance_cutoff_bound)
+            #instance_cutoff = np.random.uniform(low=lower_instance_cutoff_bound, high=upper_instance_cutoff_bound)
+            instance_cutoff = scenario.algorithm_cutoff_time
 
             instance_start_time = time.time_ns()
 

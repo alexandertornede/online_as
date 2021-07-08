@@ -5,9 +5,11 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from approaches.online.bandit_selection_strategies.ucb import UCB
+from sklearn.linear_model import SGDClassifier
 import math
 import logging
 from sklearn.preprocessing import PolynomialFeatures
+from scipy.stats import halfnorm
 
 logger = logging.getLogger("superset_lin_ucb")
 logger.addHandler(logging.StreamHandler())
@@ -46,9 +48,11 @@ class SupersetOnlineLinearRegression:
             self.current_f_map = dict()
             self.current_f_old_map = dict()
             self.data_for_algorithm = dict()
+            self.lr_classifier_map = dict()
             self.number_of_algorithm_selections_with_timeout = dict()
             self.number_of_algorithm_selections = dict()
             for algorithm_id in range(self.number_of_algorithms):
+                self.lr_classifier_map[algorithm_id] = SGDClassifier(loss='log')
                 self.current_A_map[algorithm_id] = np.identity(len(features))
                 self.current_b_map[algorithm_id] = np.zeros(len(features))
                 self.current_X_map[algorithm_id] = np.identity(len(features))
@@ -79,6 +83,9 @@ class SupersetOnlineLinearRegression:
 
             self.number_of_algorithm_selections_with_timeout[algorithm_id] = self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1
             performance = cutoff_time
+            self.lr_classifier_map[algorithm_id].partial_fit(X=scaled_sample.reshape(1,-1), y=np.asarray([1]), classes=[0,1])
+        else:
+            self.lr_classifier_map[algorithm_id].partial_fit(X=scaled_sample.reshape(1,-1), y=np.asarray([0]), classes=[0,1])
 
         lambda_param = self.lambda_param
         #lambda_param = self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
@@ -144,18 +151,19 @@ class SupersetOnlineLinearRegression:
                 b = self.current_b_map[algorithm_id]
                 theta_a = np.dot(A_inv, b)
 
-                s = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, self.current_X_map[algorithm_id], A_inv, scaled_sample])) # * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * cutoff_time
+                s = math.sqrt(np.linalg.multi_dot([scaled_sample, A_inv, self.current_X_map[algorithm_id], A_inv, scaled_sample])) * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * cutoff_time
 
                 predicted_performance = np.dot(theta_a, scaled_sample)
-                bound = self.alpha * s
+                bound = self.alpha * s * halfnorm.rvs(loc=0, scale=0.25)  #np.random.normal(0, 5.0)
                 #probability_term = (10*cutoff_time - np.dot(theta_a, scaled_sample))*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), cutoff_time))/(self.C_tilde * cutoff_time))
-                probability_term = max(0,1 - (cutoff_time - min(max(0, predicted_performance), cutoff_time))/cutoff_time) #self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
+                #probability_term = max(0,1 - (cutoff_time - min(max(0, predicted_performance), cutoff_time))/cutoff_time) #self.number_of_algorithm_selections_with_timeout[algorithm_id] / (self.number_of_algorithm_selections[algorithm_id]+1)
+                probability_term = self.lr_classifier_map[algorithm_id].predict_proba(X=scaled_sample.reshape(1,-1))[0][1]
 
                 #l_a = np.dot(theta_a, scaled_sample) - self.alpha * s + 10*cutoff_time*((np.dot(theta_a, scaled_sample) - self.alpha * s - min(np.dot(theta_a, scaled_sample), cutoff_time))/(self.C_tilde * cutoff_time))
                 # if probability_term < 0:
                 #     l_a = predicted_performance
                 # else:
-                l_a = (1 - probability_term) * (predicted_performance - bound) + probability_term*10*cutoff_time
+                l_a = predicted_performance - bound + (10*cutoff_time - predicted_performance) * probability_term
 
 
                 predicted_performances.append(l_a)

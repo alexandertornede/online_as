@@ -7,17 +7,19 @@ from sklearn.pipeline import Pipeline
 from approaches.online.bandit_selection_strategies.ucb import UCB
 import math
 import logging
+from scipy.stats import halfnorm
 
 logger = logging.getLogger("lin_ucb")
 logger.addHandler(logging.StreamHandler())
 
 class LinUCBPerformance:
 
-    def __init__(self, bandit_selection_strategy, alpha:float):
+    def __init__(self, bandit_selection_strategy, alpha:float, new_tricks:bool):
         self.bandit_selection_strategy = bandit_selection_strategy
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
         self.alpha = alpha
+        self.new_tricks = new_tricks
 
     def initialize(self, number_of_algorithms: int):
         self.number_of_algorithms = number_of_algorithms
@@ -122,9 +124,14 @@ class LinUCBPerformance:
                 b = self.current_b_map[algorithm_id]
                 theta_a = np.dot(X_inv, b)
 
-                s = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) #* math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * cutoff_time
+                s = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * cutoff
 
-                l_a = np.dot(theta_a, scaled_sample) - self.alpha * s
+                if self.new_tricks:
+                    bound = self.alpha * s * halfnorm.rvs(loc=0, scale=0.25) #np.random.normal(0, 5.0)
+                else:
+                    bound = self.alpha * s
+
+                l_a = np.dot(theta_a, scaled_sample) - bound
 
                 predicted_performances.append(l_a)
                 confidence_bound_widths.append(0)
@@ -141,5 +148,5 @@ class LinUCBPerformance:
         return final_prediction_vector
 
     def get_name(self):
-        name = 'lin2_{}'.format(type(self.bandit_selection_strategy).__name__)
+        name = 'lin2_{}_nt={}'.format(type(self.bandit_selection_strategy).__name__,str(self.new_tricks))
         return name
