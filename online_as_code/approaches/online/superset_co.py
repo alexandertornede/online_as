@@ -101,6 +101,9 @@ class SupersetConstrainedOptimization:
         mask = (np.isnan(sample))
         imputed_sample = np.copy(sample)
         imputed_sample[mask] = self.mean_feature_values[mask]
+        #if the sample contains only 0s as features, it can cause problems
+        if np.all((imputed_sample == 0)):
+            imputed_sample[0] = 0.000000001
         return imputed_sample
 
     def update_scaler(self, sample: ndarray):

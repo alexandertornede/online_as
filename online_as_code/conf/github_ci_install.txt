@@ -1,1 +1,2 @@
 pip install git+git://github.com/scikit-learn-contrib/forest-confidence-interval.git
+pip install git+git://github.com/mlindauer/ASlibScenario.git

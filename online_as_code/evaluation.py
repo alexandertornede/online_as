@@ -29,7 +29,8 @@ def evaluate(scenario: ASlibScenario, approach, metrics, amount_of_training_inst
         amount_of_training_instances) + " scenario instances on scenario " + str(scenario.scenario))
 
     censored_value_imputation = db_config["EXPERIMENTS"]["censored_value_imputation"]
-    metric_results = evaluate_train_test_split(scenario, approach, metrics, fold, amount_of_training_instances, censored_value_imputation)
+    debug_mode = db_config["EXPERIMENTS"]["debug_mode"] == 'True'
+    metric_results = evaluate_train_test_split(scenario, approach, metrics, fold, amount_of_training_instances, censored_value_imputation,debug_mode)
 
     for i, result in enumerate(metric_results):
         publish_results_to_database(db_config, scenario.scenario, fold, approach.get_name(), metrics[i].get_name(), result)

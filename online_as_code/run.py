@@ -1,5 +1,8 @@
 import logging
 import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+
 import configparser
 import multiprocessing as mp
 import numpy as np
@@ -9,8 +12,8 @@ from approaches.offline.single_best_solver import SingleBestSolver
 from approaches.offline.single_best_solver_with_feature_costs import SingleBestSolverWithFeatureCosts
 from approaches.offline.virtual_single_best_solver import VirtualSingleBestSolverWithFeatureCosts
 from approaches.offline.oracle import Oracle
-from approaches.offline.survival_forests.surrogate import SurrogateSurvivalForest
-from approaches.offline.survival_forests.auto_surrogate import SurrogateAutoSurvivalForest
+#from approaches.offline.survival_forests.surrogate import SurrogateSurvivalForest
+#from approaches.offline.survival_forests.auto_surrogate import SurrogateAutoSurvivalForest
 from approaches.offline.baselines.per_algorithm_regressor import PerAlgorithmRegressor
 from approaches.offline.baselines.multiclass_algorithm_selector import MultiClassAlgorithmSelector
 from approaches.offline.baselines.sunny import SUNNY
@@ -103,18 +106,18 @@ def create_approach(approach_names):
             approaches.append(VirtualSingleBestSolverWithFeatureCosts())
         if approach_name == 'oracle':
             approaches.append(Oracle())
-        if approach_name == 'ExpectationSurvivalForest':
-            approaches.append(SurrogateSurvivalForest(criterion='Expectation'))
-        if approach_name == 'PolynomialSurvivalForest':
-            approaches.append(SurrogateSurvivalForest(criterion='Polynomial'))
-        if approach_name == 'GridSearchSurvivalForest':
-            approaches.append(SurrogateSurvivalForest(criterion='GridSearch'))
-        if approach_name == 'ExponentialSurvivalForest':
-            approaches.append(SurrogateSurvivalForest(criterion='Exponential'))
-        if approach_name == 'SurrogateAutoSurvivalForest':
-            approaches.append(SurrogateAutoSurvivalForest())
-        if approach_name == 'PAR10SurvivalForest':
-            approaches.append(SurrogateSurvivalForest(criterion='PAR10'))
+        # if approach_name == 'ExpectationSurvivalForest':
+        #     approaches.append(SurrogateSurvivalForest(criterion='Expectation'))
+        # if approach_name == 'PolynomialSurvivalForest':
+        #     approaches.append(SurrogateSurvivalForest(criterion='Polynomial'))
+        # if approach_name == 'GridSearchSurvivalForest':
+        #     approaches.append(SurrogateSurvivalForest(criterion='GridSearch'))
+        # if approach_name == 'ExponentialSurvivalForest':
+        #     approaches.append(SurrogateSurvivalForest(criterion='Exponential'))
+        # if approach_name == 'SurrogateAutoSurvivalForest':
+        #     approaches.append(SurrogateAutoSurvivalForest())
+        # if approach_name == 'PAR10SurvivalForest':
+        #     approaches.append(SurrogateSurvivalForest(criterion='PAR10'))
         if approach_name == 'per_algorithm_regressor':
             approaches.append(PerAlgorithmRegressor())
         if approach_name == 'imputed_per_algorithm_rf_regressor':

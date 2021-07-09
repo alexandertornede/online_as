@@ -11,10 +11,9 @@ class FeatureFreeEpsilonGreedy:
     def __init__(self, bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)):
         self.bandit_selection_strategy = bandit_selection_strategy
 
-    def initialize(self, number_of_algorithms: int, cutoff_time: float):
+    def initialize(self, number_of_algorithms: int):
         self.performances_map = dict()
         self.number_of_algorithms = number_of_algorithms
-        self.cutoff_time = cutoff_time
 
         for algorithm_index in range(number_of_algorithms):
             self.performances_map[algorithm_index] = list()
@@ -26,7 +25,7 @@ class FeatureFreeEpsilonGreedy:
         predicted_performances = list()
 
         for algorithm_id in range(self.number_of_algorithms):
-            average_performance = self.cutoff_time
+            average_performance = cutoff_time
             # if we do not have any values for this algorithm yet, pretend it always times out
             if len(self.performances_map[algorithm_id]) > 0:
                 average_performance = np.mean(np.asarray(self.performances_map[algorithm_id]))

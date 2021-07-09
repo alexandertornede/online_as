@@ -12,7 +12,7 @@ logger = logging.getLogger("evaluate_train_test_split")
 logger.addHandler(logging.StreamHandler())
 
 
-def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: int, amount_of_training_instances: int, censored_value_imputation:str):
+def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: int, amount_of_training_instances: int, censored_value_imputation:str, debug_mode:bool):
 
     if censored_value_imputation != 'all':
         scenario = copy.deepcopy(scenario)
@@ -45,7 +45,8 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
 
         if instance_id % 100 == 0 and instance_id > 0:
             end_time = time.time()
-            logger.info("Starting with instance " + str(instance_id)+ ". Last 100 instances took " + "{:.2f}".format(end_time-start_time) + " s .")
+            if debug_mode:
+                logger.info("Starting with instance " + str(instance_id)+ ". Last 100 instances took " + "{:.2f}".format(end_time-start_time) + " s .")
             start_time = time.time()
 
         X = feature_data[instance_id]
