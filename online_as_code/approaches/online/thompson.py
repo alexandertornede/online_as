@@ -15,11 +15,12 @@ logger.addHandler(logging.StreamHandler())
 
 class Thompson:
 
-    def __init__(self, sigma:float, lamda:float):
+    def __init__(self, sigma:float, lamda:float, buckley_james: bool = False):
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
         self.sigma = sigma
         self.lamda = lamda
+        self.buckley_james = buckley_james
 
     def initialize(self, number_of_algorithms: int):
         self.number_of_algorithms = number_of_algorithms
@@ -63,7 +64,22 @@ class Thompson:
         self.number_of_algorithm_selections[algorithm_id] = self.number_of_algorithm_selections[algorithm_id] + 1
         if performance >= cutoff_time:
             self.number_of_algorithm_selections_with_timeout[algorithm_id] = self.number_of_algorithm_selections_with_timeout[algorithm_id] + 1
-            performance = cutoff_time
+            if self.buckley_james:
+                A_inv = np.linalg.inv(self.current_A_map[algorithm_id])
+                b = self.current_b_map[algorithm_id]
+                theta_a = np.dot(A_inv, b)
+
+                sample_theta_based_performance = 0
+                counter = 0
+                while sample_theta_based_performance <= cutoff_time and counter < 20:
+                    sampled_theta = np.random.multivariate_normal(mean=theta_a, cov=self.sigma*A_inv)
+                    sample_theta_based_performance = np.dot(scaled_sample, sampled_theta)
+                    counter += 1
+                performance = sample_theta_based_performance
+                if counter >= 20:
+                    performance = cutoff_time
+            else:
+                performance = cutoff_time
 
         self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance * scaled_sample
         self.current_A_map[algorithm_id] = self.current_A_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
@@ -88,24 +104,6 @@ class Thompson:
         self.maximum_feature_values = np.maximum(self.maximum_feature_values, sample)
 
     def scale_sample(self, sample: ndarray):
-        # min-max scaling
-        max = 1
-        min = 0
-        # print("sample" + str(sample))
-        # print(self.maximum_feature_values)
-        # print(self.minimum_feature_values)
-        # print((self.maximum_feature_values - self.minimum_feature_values))
-
-        # denominator = (self.maximum_feature_values - self.minimum_feature_values)
-        #
-        # #avoid division by zero => if denimonator is zero in one coordinate, X_std will be 0 anyway
-        # denominator[denominator == 0] = 1
-        #
-        # np.seterr(divide="raise", invalid="raise")
-        #
-        # X_std = ((sample - self.minimum_feature_values) / denominator)
-        # scaled_sample = X_std * (max - min) + min
-        # return np.clip(scaled_sample, a_min=0, a_max=1)
         return sample / np.linalg.norm(sample)
 
     def is_data_for_algorithm_present(self, algorithm_id):
@@ -136,8 +134,6 @@ class Thompson:
                 if counter >= 20:
                     sample_theta_based_performance = 0
 
-                # s = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * cutoff
-
                 cdf = norm.cdf(x=cutoff, loc=sample_theta_based_performance, scale=np.linalg.multi_dot([scaled_sample, self.sigma*A_inv, scaled_sample]))
                 l_a = sample_theta_based_performance + (10*cutoff - sample_theta_based_performance) * (1 - cdf)
 
@@ -152,5 +148,5 @@ class Thompson:
         return np.asarray(predicted_performances)
 
     def get_name(self):
-        name = 'thompson_sigma={}_lambda={}'.format(str(self.sigma), str(self.lamda))
+        name = 'thompson_sigma={}_lambda={}_bj={}'.format(str(self.sigma), str(self.lamda), str(self.buckley_james))
         return name

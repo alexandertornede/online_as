@@ -71,6 +71,8 @@ def create_approach(approach_names):
     for approach_name in approach_names:
         if approach_name == 'thompson':
             approaches.append(Thompson(sigma=1, lamda=0.5))
+        if approach_name == 'thompson_bj':
+            approaches.append(Thompson(sigma=1, lamda=0.5, buckley_james=True))
         if approach_name == 'superset_co':
             approaches.append(SupersetConstrainedOptimization(bandit_selection_strategy=UCB(gamma=1), alpha=1, C_tilde=2))
         if approach_name == 'superset_online_linear_regression_lambda_sensitivity':
