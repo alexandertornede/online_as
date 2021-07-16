@@ -39,6 +39,10 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
     if amount_of_training_instances <= 0:
         last_instance_id = len(scenario.instances)
 
+
+    runtimes_per_instance = list()
+    cumulative_regret_per_instance = list()
+
     start_time = time.time()
     total_time = 0
     for instance_id in range(0, last_instance_id):
@@ -92,11 +96,17 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
             total_instance_time = instance_end_time - instance_start_time
             total_time = total_time + total_instance_time
 
+            #make sure that we plot the runtime per instance for plotting
+            runtimes_per_instance.append(total_instance_time / 1000000000)
+
             #compute the values of the different metrics
             num_counted_test_values += 1
             for i, metric in enumerate(metrics):
                 metric_result = metric.evaluate(y, predicted_scores, accumulated_feature_time, instance_cutoff)
                 approach_metric_values[i] = (approach_metric_values[i] + metric_result)
+                #make sure that we track the cumulative regret per instance for plotting
+                if metric.get_name() == Par10RegretMetric().get_name():
+                    cumulative_regret_per_instance.append(approach_metric_values[i])
 
     approach_metric_values = np.true_divide(approach_metric_values, num_counted_test_values)
 
@@ -111,15 +121,19 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
 
         print(metrics[i].get_name() + ': {0:.10f}'.format(approach_metric_values[i]))
 
+
+    write_plot_file(values_to_save=cumulative_regret_per_instance, file_name_prefix='cumreg', scenario_name=scenario.scenario, fold = fold, approach=approach.get_name())
+    write_plot_file(values_to_save=runtimes_per_instance, file_name_prefix='runtimeins', scenario_name=scenario.scenario, fold = fold, approach=approach.get_name())
+
     return approach_metric_values
 
 
-def write_instance_wise_results_to_file(instancewise_result_strings: list, scenario_name: str):
-    if not os.path.exists('output'):
-        os.makedirs('output')
-    complete_instancewise_result_string = '\n'.join(instancewise_result_strings)
-    f = open("output/" + scenario_name + ".arff", "a")
-    f.write(complete_instancewise_result_string + "\n")
+def write_plot_file(values_to_save: list, file_name_prefix:str, scenario_name: str, fold: int, approach: str):
+    if not os.path.exists('output/' + file_name_prefix + "/"):
+        os.makedirs('output/' + file_name_prefix + "/")
+    complete_instance_wise_string = ';'.join(str(v) for v in values_to_save)
+    f = open("output/" + file_name_prefix + "/" + scenario_name + "+" + str(fold) + "+" + approach + ".txt", "a")
+    f.write(complete_instance_wise_string + "\n")
     f.close()
 
 def shuffle_in_unison(a:ndarray , b:ndarray, c:ndarray):

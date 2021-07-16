@@ -1,16 +1,10 @@
 import numpy as np
 from numpy import ndarray
-from sklearn.base import clone
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
-from approaches.online.bandit_selection_strategies.ucb import UCB
 import math
 import logging
-from scipy.stats import halfnorm
 from scipy.stats import norm
 
-logger = logging.getLogger("lin_ucb")
+logger = logging.getLogger("thompson")
 logger.addHandler(logging.StreamHandler())
 
 class Thompson:
@@ -160,5 +154,5 @@ class Thompson:
         return np.asarray(predicted_performances)
 
     def get_name(self):
-        name = 'thompson_sigma={}_lambda={}_bj={}'.format(str(self.sigma), str(self.lamda), str(self.buckley_james))
+        name = 'thompson_sigma={}_lambda={}_bj={}_ln={}'.format(str(self.sigma), str(self.lamda), str(self.buckley_james), str(self.log_normal_distribution))
         return name

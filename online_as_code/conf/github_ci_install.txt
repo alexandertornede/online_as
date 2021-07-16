@@ -1,2 +1,4 @@
 pip install git+git://github.com/scikit-learn-contrib/forest-confidence-interval.git
 pip install git+git://github.com/mlindauer/ASlibScenario.git
+
+Install mkl: https://docs.anaconda.com/mkl-optimizations/index.html
