@@ -42,6 +42,7 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
 
     runtimes_per_instance = list()
     cumulative_regret_per_instance = list()
+    regret_per_instance = list()
 
     start_time = time.time()
     total_time = 0
@@ -107,6 +108,7 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
                 #make sure that we track the cumulative regret per instance for plotting
                 if metric.get_name() == Par10RegretMetric().get_name():
                     cumulative_regret_per_instance.append(approach_metric_values[i])
+                    regret_per_instance.append(metric_result)
 
     approach_metric_values = np.true_divide(approach_metric_values, num_counted_test_values)
 
@@ -122,8 +124,9 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
         print(metrics[i].get_name() + ': {0:.10f}'.format(approach_metric_values[i]))
 
 
-    write_plot_file(values_to_save=cumulative_regret_per_instance, file_name_prefix='cumreg', scenario_name=scenario.scenario, fold = fold, approach=approach.get_name())
-    write_plot_file(values_to_save=runtimes_per_instance, file_name_prefix='runtimeins', scenario_name=scenario.scenario, fold = fold, approach=approach.get_name())
+    write_plot_file(values_to_save=cumulative_regret_per_instance, file_name_prefix='cumulative_regret', scenario_name=scenario.scenario, fold = fold, approach=approach.get_name())
+    write_plot_file(values_to_save=regret_per_instance, file_name_prefix='regret', scenario_name=scenario.scenario, fold = fold, approach=approach.get_name())
+    write_plot_file(values_to_save=runtimes_per_instance, file_name_prefix='runtimes', scenario_name=scenario.scenario, fold = fold, approach=approach.get_name())
 
     return approach_metric_values
 

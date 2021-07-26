@@ -9,13 +9,13 @@ logger.addHandler(logging.StreamHandler())
 
 class Thompson:
 
-    def __init__(self, sigma:float, lamda:float, buckley_james: bool = False, log_normal_distribution: bool = False):
+    def __init__(self, sigma:float, lamda:float, revisited: bool, buckley_james: bool = False):
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
         self.sigma = sigma
         self.lamda = lamda
         self.buckley_james = buckley_james
-        self.log_normal_distribution = log_normal_distribution
+        self.revisited = revisited
 
     def initialize(self, number_of_algorithms: int):
         self.number_of_algorithms = number_of_algorithms
@@ -77,9 +77,7 @@ class Thompson:
                 performance = cutoff_time
 
 
-        performance_to_use_for_update = performance
-        if self.log_normal_distribution:
-            performance_to_use_for_update = math.log(performance)
+        performance_to_use_for_update = math.log(performance)
 
         self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance_to_use_for_update * scaled_sample
         self.current_A_map[algorithm_id] = self.current_A_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
@@ -125,23 +123,16 @@ class Thompson:
                 b = self.current_b_map[algorithm_id]
                 theta_a = np.dot(A_inv, b)
 
-                if self.log_normal_distribution:
-                    sampled_theta = np.random.multivariate_normal(mean=theta_a, cov=self.sigma*A_inv)
-                    sample_theta_based_performance = np.dot(scaled_sample, sampled_theta)
-                    cdf = norm.cdf(x=math.log(cutoff), loc=sample_theta_based_performance, scale=np.linalg.multi_dot([scaled_sample, self.sigma*A_inv, scaled_sample]))
-                    l_a = math.exp(sample_theta_based_performance) + (10*cutoff - math.exp(sample_theta_based_performance)) * (1 - cdf)
+                sampled_theta = np.random.multivariate_normal(mean=theta_a, cov=self.sigma*A_inv)
+                sample_theta_based_performance = np.dot(scaled_sample, sampled_theta)
+                if self.revisited:
+                    scale = np.linalg.multi_dot([scaled_sample, self.sigma*A_inv, scaled_sample])
+                    cdf = norm.cdf(x=math.log(cutoff), loc=sample_theta_based_performance, scale=scale)
+                    C_tilde = (cutoff - sample_theta_based_performance) / self.sigma*scale
+                    inverse_mills_ratio = norm.pdf(loc=0, scale=1, x=C_tilde) / norm.cdf(loc=0, scale=1, x=C_tilde)
+                    l_a = sample_theta_based_performance + (1 - cdf) * (math.log(10*cutoff) - sample_theta_based_performance + self.sigma*scale * inverse_mills_ratio )
                 else:
-                    sample_theta_based_performance = 0
-                    counter = 0
-                    while sample_theta_based_performance <= 0 and counter < 20:
-                        sampled_theta = np.random.multivariate_normal(mean=theta_a, cov=self.sigma*A_inv)
-                        sample_theta_based_performance = np.dot(scaled_sample, sampled_theta)
-                        counter += 1
-                    if counter >= 20:
-                        sample_theta_based_performance = 0
-
-                    cdf = norm.cdf(x=cutoff, loc=sample_theta_based_performance, scale=np.linalg.multi_dot([scaled_sample, self.sigma*A_inv, scaled_sample]))
-                    l_a = sample_theta_based_performance + (10*cutoff - sample_theta_based_performance) * (1 - cdf)
+                    l_a = sample_theta_based_performance
 
                 predicted_performances.append(l_a)
 

@@ -77,6 +77,22 @@ def create_approach(approach_names):
             approaches.append(Thompson(sigma=1, lamda=0.5, buckley_james=True))
         if approach_name == 'thompson_bj_ln':
             approaches.append(Thompson(sigma=1, lamda=0.5, buckley_james=True, log_normal_distribution=True))
+        if approach_name == 'blinducb':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=False, ignore_censored=True))
+        if approach_name == 'blinducb_rev':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=True, ignore_censored=True))
+        if approach_name == 'randblinducb':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=False, ignore_censored=True))
+        if approach_name == 'randblinducb_rev':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=True, ignore_censored=True))
+        if approach_name == 'bclinucb':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=False, ignore_censored=False))
+        if approach_name == 'bclinucb_rev':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=True, ignore_censored=False))
+        if approach_name == 'randbclinucb':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=False, ignore_censored=False))
+        if approach_name == 'randbclinucb_rev':
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=True, ignore_censored=False))
         if approach_name == 'superset_co':
             approaches.append(SupersetConstrainedOptimization(bandit_selection_strategy=UCB(gamma=1), alpha=1, C_tilde=2))
         if approach_name == 'superset_online_linear_regression_lambda_sensitivity':
@@ -84,10 +100,6 @@ def create_approach(approach_names):
                 approaches.append(SupersetOnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), lambda_param=lambda_param, alpha=1, C_tilde=2))
         if approach_name == 'superset_online_linear_regression_ucb':
             approaches.append(SupersetOnlineLinearRegression(bandit_selection_strategy=UCB(gamma=1), lambda_param=0.5, alpha=1, C_tilde=2)) # alpha is essentially gamma
-        if approach_name == 'lin_ucb':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False))
-        if approach_name == 'lin_ucb_new_tricks':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True))
         if approach_name == 'online_linear_regression_epsilon_greedy':
             approaches.append(OnlineLinearRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
         if approach_name == 'online_linear_regression_ucb_multiple_copies':
