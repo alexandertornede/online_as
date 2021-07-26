@@ -65,13 +65,14 @@ class LinUCBPerformance:
             performance = cutoff_time
 
         #simulate log_normal distribution
-        performance = math.log(performance)
+        if performance == 0:
+            performance = 0.0001
+        performance_to_use_for_update = math.log(performance)
 
         #only do this update when we either work on all samples or if the performance is less than C in case of BlindUCB
         if (not self.ignore_censored) or performance < cutoff_time:
-            self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance * scaled_sample
-
-        self.current_X_map[algorithm_id] = self.current_X_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
+            self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance_to_use_for_update * scaled_sample
+            self.current_X_map[algorithm_id] = self.current_X_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
 
     def update_imputer(self, sample: ndarray):
         #iteratively update the mean values of all features
@@ -123,7 +124,7 @@ class LinUCBPerformance:
                     o_a = performance - bound
                     p_a = performance + bound
 
-                    C_hat = (cutoff - performance)/self.sigma
+                    C_hat = (math.log(cutoff) - performance)/self.sigma
                     mills_ratio = norm.pdf(loc=0, scale=1, x=C_hat) / norm.cdf(loc=0, scale=1, x=C_hat)
 
                     l_a = o_a + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - p_a + self.sigma * mills_ratio)
@@ -151,6 +152,8 @@ class LinUCBPerformance:
                 name = 'blinducb'
             elif self.revisited and not self.new_tricks:
                 name = 'blinducb_rev'
+            elif not self.revisited and self.new_tricks:
+                name = 'rand_blinducb'
             elif self.revisited and self.new_tricks:
                 name = 'rand_blinducb_rev'
         elif not self.ignore_censored:
@@ -158,8 +161,9 @@ class LinUCBPerformance:
                 name = 'bclinucb'
             elif self.revisited and not self.new_tricks:
                 name = 'bclinucb_rev'
+            elif not self.revisited and self.new_tricks:
+                name = 'rand_bclinucb'
             elif self.revisited and self.new_tricks:
                 name = 'rand_bcblinucb_rev'
-        else:
-            name = 'lin2_{}_nt={}_cen={}_rev={}'.format(type(self.bandit_selection_strategy).__name__,str(self.new_tricks), str(self.ignore_censored), str(self.revisited))
+        name += '_sigma={}'.format(str(self.sigma))
         return name

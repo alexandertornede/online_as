@@ -70,28 +70,28 @@ def create_approach(approach_names):
     approaches = list()
     for approach_name in approach_names:
         if approach_name == 'thompson':
-            approaches.append(Thompson(sigma=1, lamda=0.5))
-        if approach_name == 'thompson_ln':
-            approaches.append(Thompson(sigma=1, lamda=0.5, log_normal_distribution=True))
-        if approach_name == 'thompson_bj':
-            approaches.append(Thompson(sigma=1, lamda=0.5, buckley_james=True))
-        if approach_name == 'thompson_bj_ln':
-            approaches.append(Thompson(sigma=1, lamda=0.5, buckley_james=True, log_normal_distribution=True))
+            approaches.append(Thompson(sigma=1.0, lamda=0.5, buckley_james=False, revisited=False))
+        if approach_name == 'thompson_rev':
+            approaches.append(Thompson(sigma=1.0, lamda=0.5, buckley_james=False, revisited=True))
+        if approach_name == 'bj_thompson':
+            approaches.append(Thompson(sigma=1.0, lamda=0.5, buckley_james=True, revisited=False))
+        if approach_name == 'bj_thompson_rev':
+            approaches.append(Thompson(sigma=1.0, lamda=0.5, buckley_james=True, revisited=True))
         if approach_name == 'blinducb':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=False, ignore_censored=True))
         if approach_name == 'blinducb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=True, ignore_censored=True))
-        if approach_name == 'randblinducb':
+        if approach_name == 'rand_blinducb':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=False, ignore_censored=True))
-        if approach_name == 'randblinducb_rev':
+        if approach_name == 'rand_blinducb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=True, ignore_censored=True))
         if approach_name == 'bclinucb':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=False, ignore_censored=False))
         if approach_name == 'bclinucb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=True, ignore_censored=False))
-        if approach_name == 'randbclinucb':
+        if approach_name == 'rand_bclinucb':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=False, ignore_censored=False))
-        if approach_name == 'randbclinucb_rev':
+        if approach_name == 'rand_bclinucb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=True, ignore_censored=False))
         if approach_name == 'superset_co':
             approaches.append(SupersetConstrainedOptimization(bandit_selection_strategy=UCB(gamma=1), alpha=1, C_tilde=2))

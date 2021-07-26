@@ -76,7 +76,8 @@ class Thompson:
             else:
                 performance = cutoff_time
 
-
+        if performance == 0:
+            performance = 0.0001
         performance_to_use_for_update = math.log(performance)
 
         self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance_to_use_for_update * scaled_sample
@@ -128,7 +129,7 @@ class Thompson:
                 if self.revisited:
                     scale = np.linalg.multi_dot([scaled_sample, self.sigma*A_inv, scaled_sample])
                     cdf = norm.cdf(x=math.log(cutoff), loc=sample_theta_based_performance, scale=scale)
-                    C_tilde = (cutoff - sample_theta_based_performance) / self.sigma*scale
+                    C_tilde = (math.log(cutoff) - sample_theta_based_performance) / self.sigma*scale
                     inverse_mills_ratio = norm.pdf(loc=0, scale=1, x=C_tilde) / norm.cdf(loc=0, scale=1, x=C_tilde)
                     l_a = sample_theta_based_performance + (1 - cdf) * (math.log(10*cutoff) - sample_theta_based_performance + self.sigma*scale * inverse_mills_ratio )
                 else:
@@ -145,5 +146,10 @@ class Thompson:
         return np.asarray(predicted_performances)
 
     def get_name(self):
-        name = 'thompson_sigma={}_lambda={}_bj={}_ln={}'.format(str(self.sigma), str(self.lamda), str(self.buckley_james), str(self.log_normal_distribution))
+        name = 'thompson'
+        if self.revisited:
+            name = name + "_rev"
+        if self.buckley_james:
+            name = 'bj_' + name
+        name = name + '_sigma={}_lambda={}'.format(str(self.sigma), str(self.lamda))
         return name
