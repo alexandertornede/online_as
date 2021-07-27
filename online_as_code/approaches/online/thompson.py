@@ -116,6 +116,9 @@ class Thompson:
             scaled_sample = self.impute_sample(features)
             scaled_sample = self.scale_sample(scaled_sample)
 
+        cdfs_debug = list()
+        sample_based_performance_debug = list()
+        scale_debug = list()
         for algorithm_id in range(self.number_of_algorithms):
             #if we have samples for that algorithms
             if self.is_data_for_algorithm_present(algorithm_id):
@@ -126,12 +129,15 @@ class Thompson:
 
                 sampled_theta = np.random.multivariate_normal(mean=theta_a, cov=self.sigma*A_inv)
                 sample_theta_based_performance = np.dot(scaled_sample, sampled_theta)
+                sample_based_performance_debug.append(sample_theta_based_performance)
                 if self.revisited:
-                    scale = np.linalg.multi_dot([scaled_sample, self.sigma*A_inv, scaled_sample])
+                    scale = self.sigma*np.linalg.multi_dot([scaled_sample, self.sigma*A_inv, scaled_sample])
+                    scale_debug.append(scale)
                     cdf = norm.cdf(x=math.log(cutoff), loc=sample_theta_based_performance, scale=scale)
-                    C_tilde = (math.log(cutoff) - sample_theta_based_performance) / self.sigma*scale
+                    cdfs_debug.append(cdf)
+                    C_tilde = (math.log(cutoff) - sample_theta_based_performance) / math.sqrt(scale)
                     inverse_mills_ratio = norm.pdf(loc=0, scale=1, x=C_tilde) / norm.cdf(loc=0, scale=1, x=C_tilde)
-                    l_a = sample_theta_based_performance + (1 - cdf) * (math.log(10*cutoff) - sample_theta_based_performance + self.sigma*scale * inverse_mills_ratio )
+                    l_a = sample_theta_based_performance + (1 - cdf) * (math.log(10*cutoff) - sample_theta_based_performance + math.sqrt(scale) * inverse_mills_ratio )
                 else:
                     l_a = sample_theta_based_performance
 
@@ -141,6 +147,9 @@ class Thompson:
                 #if not, set its performance to -100 such that it will get pulled for sure
                 predicted_performances.append(-1000000)
 
+        #print("cdf: " + str(cdfs_debug))
+        #print("perf: " + str(sample_based_performance_debug))
+        #print("scale: " + str(scale_debug))
         logger.debug("pred_performances:" + str(predicted_performances))
 
         return np.asarray(predicted_performances)
