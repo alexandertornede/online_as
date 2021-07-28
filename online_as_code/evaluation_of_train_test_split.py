@@ -67,7 +67,8 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
 
             # compute feature time
             accumulated_feature_time = 0
-            if scenario.feature_cost_data is not None and approach.get_name() != 'sbs' and approach.get_name() != 'oracle' and approach.get_name() != 'feature_free_epsilon_greedy':
+            if scenario.feature_cost_data is not None and approach.get_name() != 'sbs' and approach.get_name() != 'oracle' \
+                    and approach.get_name() != 'feature_free_epsilon_greedy' and approach.get_name() != 'online_oracle':
                 feature_time = feature_cost_data[instance_id]
                 accumulated_feature_time = np.sum(feature_time)
 
@@ -87,7 +88,11 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
             instance_start_time = time.time_ns()
 
             #query prediction from learner
-            predicted_scores = approach.predict(X, instance_id, instance_cutoff)
+            if approach.get_name() == 'online_oracle':
+                #for the online oracle we want to pass the id of the best algorithm as instance id such that it can be chosen easily
+                predicted_scores = approach.predict(X, np.argmin(y), instance_cutoff)
+            else:
+                predicted_scores = approach.predict(X, instance_id, instance_cutoff)
             predicted_algorithm_id = np.argmin(predicted_scores)
 
             #train learner with new sample

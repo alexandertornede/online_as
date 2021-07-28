@@ -8,12 +8,6 @@ import multiprocessing as mp
 import numpy as np
 import database_utils
 from evaluation import evaluate_scenario
-from approaches.offline.single_best_solver import SingleBestSolver
-from approaches.offline.single_best_solver_with_feature_costs import SingleBestSolverWithFeatureCosts
-from approaches.offline.virtual_single_best_solver import VirtualSingleBestSolverWithFeatureCosts
-from approaches.offline.oracle import Oracle
-#from approaches.offline.survival_forests.surrogate import SurrogateSurvivalForest
-#from approaches.offline.survival_forests.auto_surrogate import SurrogateAutoSurvivalForest
 from approaches.offline.baselines.per_algorithm_regressor import PerAlgorithmRegressor
 from approaches.offline.baselines.multiclass_algorithm_selector import MultiClassAlgorithmSelector
 from approaches.offline.baselines.sunny import SUNNY
@@ -24,12 +18,10 @@ from approaches.offline.baselines.satzilla07 import SATzilla07
 from approaches.online.deegrote import Degroote
 from approaches.online.cox_regression import CoxRegression
 from approaches.online.feature_free_epsilon_greedy import FeatureFreeEpsilonGreedy
-from approaches.online.online_linear_regression import OnlineLinearRegression
-from approaches.online.superset_online_linear_regression import SupersetOnlineLinearRegression
 from approaches.online.bandit_selection_strategies.ucb import UCB
 from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
 from approaches.online.linUCB import LinUCBPerformance
-from approaches.online.superset_co import SupersetConstrainedOptimization
+from approaches.online.online_oracle import OnlineOracle
 from approaches.online.thompson import Thompson
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
@@ -69,6 +61,8 @@ def log_result(result):
 def create_approach(approach_names):
     approaches = list()
     for approach_name in approach_names:
+        if approach_name == 'online_oracle':
+            approaches.append(OnlineOracle())
         if approach_name == 'thompson':
             approaches.append(Thompson(sigma=1.0, lamda=0.5, buckley_james=False, revisited=False, true_expected_value=False))
         if approach_name == 'thompson_rev':
