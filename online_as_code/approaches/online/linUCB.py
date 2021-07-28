@@ -15,7 +15,7 @@ logger.addHandler(logging.StreamHandler())
 
 class LinUCBPerformance:
 
-    def __init__(self, bandit_selection_strategy, alpha:float, new_tricks:bool, ignore_censored:bool, revisited: bool, sigma:float=1 ):
+    def __init__(self, bandit_selection_strategy, alpha:float, new_tricks:bool, ignore_censored:bool, revisited: bool, true_expected_value: bool, sigma:float=1 ):
         self.bandit_selection_strategy = bandit_selection_strategy
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
@@ -24,6 +24,7 @@ class LinUCBPerformance:
         self.ignore_censored = ignore_censored
         self.revisited = revisited
         self.sigma = sigma
+        self.true_expected_value = true_expected_value
 
     def initialize(self, number_of_algorithms: int):
         self.number_of_algorithms = number_of_algorithms
@@ -113,7 +114,7 @@ class LinUCBPerformance:
                 if self.ignore_censored:
                     w = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample]))
                 else:
-                    w = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * cutoff
+                    w = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * math.log(cutoff)*2
 
                 if self.new_tricks:
                     bound = self.alpha * w * halfnorm.rvs(loc=0, scale=0.25) #np.random.normal(0, 5.0)
@@ -123,11 +124,17 @@ class LinUCBPerformance:
                 if self.revisited:
                     o_a = performance - bound
                     p_a = performance + bound
+                    if self.true_expected_value:
+                        C_hat_1 = (math.log(cutoff) - performance - (self.sigma ** 2))/self.sigma
+                        C_hat_2 = (math.log(cutoff) - performance)/self.sigma
+                        mills_ratio = norm.cdf(loc=0, scale=1, x=C_hat_1) / norm.cdf(loc=0, scale=1, x=C_hat_2)
 
-                    C_hat = (math.log(cutoff) - performance)/self.sigma
-                    mills_ratio = norm.pdf(loc=0, scale=1, x=C_hat) / norm.cdf(loc=0, scale=1, x=C_hat)
+                        l_a = math.exp(o_a + (self.sigma ** 2) /2) + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - math.exp(p_a + (self.sigma ** 2) /2)*mills_ratio)
+                    else:
+                        C_hat = (math.log(cutoff) - performance)/self.sigma
+                        mills_ratio = norm.pdf(loc=0, scale=1, x=C_hat) / norm.cdf(loc=0, scale=1, x=C_hat)
 
-                    l_a = o_a + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - p_a + self.sigma * mills_ratio)
+                        l_a = o_a + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - p_a + self.sigma * mills_ratio)
                 else:
 
                     l_a = performance - bound
@@ -164,6 +171,8 @@ class LinUCBPerformance:
             elif not self.revisited and self.new_tricks:
                 name = 'rand_bclinucb'
             elif self.revisited and self.new_tricks:
-                name = 'rand_bcblinucb_rev'
+                name = 'rand_bclinucb_rev'
+        if self.true_expected_value:
+            name = 'e_' + name
         name += '_sigma={}'.format(str(self.sigma))
         return name

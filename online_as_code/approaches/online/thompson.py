@@ -9,13 +9,14 @@ logger.addHandler(logging.StreamHandler())
 
 class Thompson:
 
-    def __init__(self, sigma:float, lamda:float, revisited: bool, buckley_james: bool = False):
+    def __init__(self, sigma:float, lamda:float, revisited: bool, true_expected_value: bool, buckley_james: bool = False):
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
         self.sigma = sigma
         self.lamda = lamda
         self.buckley_james = buckley_james
         self.revisited = revisited
+        self.true_expected_value = true_expected_value
 
     def initialize(self, number_of_algorithms: int):
         self.number_of_algorithms = number_of_algorithms
@@ -66,19 +67,19 @@ class Thompson:
 
                 sample_theta_based_performance = 0
                 counter = 0
-                while sample_theta_based_performance <= cutoff_time and counter < 20:
+                while sample_theta_based_performance <= math.log(cutoff_time) and counter < 20:
                     sampled_theta = np.random.multivariate_normal(mean=theta_a, cov=self.sigma*A_inv)
                     sample_theta_based_performance = np.dot(scaled_sample, sampled_theta)
                     counter += 1
-                performance = sample_theta_based_performance
+                performance_to_use_for_update = sample_theta_based_performance
                 if counter >= 20:
-                    performance = cutoff_time
+                    performance_to_use_for_update = math.log(cutoff_time)
             else:
-                performance = cutoff_time
-
-        if performance == 0:
-            performance = 0.0001
-        performance_to_use_for_update = math.log(performance)
+                performance_to_use_for_update = math.log(cutoff_time)
+        else:
+            if performance == 0:
+                performance = 0.0001
+            performance_to_use_for_update = math.log(performance)
 
         self.current_b_map[algorithm_id] = self.current_b_map[algorithm_id] + performance_to_use_for_update * scaled_sample
         self.current_A_map[algorithm_id] = self.current_A_map[algorithm_id] + np.outer(scaled_sample, scaled_sample)
@@ -135,9 +136,15 @@ class Thompson:
                     scale_debug.append(scale)
                     cdf = norm.cdf(x=math.log(cutoff), loc=sample_theta_based_performance, scale=scale)
                     cdfs_debug.append(cdf)
-                    C_tilde = (math.log(cutoff) - sample_theta_based_performance) / math.sqrt(scale)
-                    inverse_mills_ratio = norm.pdf(loc=0, scale=1, x=C_tilde) / norm.cdf(loc=0, scale=1, x=C_tilde)
-                    l_a = sample_theta_based_performance + (1 - cdf) * (math.log(10*cutoff) - sample_theta_based_performance + math.sqrt(scale) * inverse_mills_ratio )
+                    if self.true_expected_value:
+                        C_tilde_1 = (math.log(cutoff) - sample_theta_based_performance - scale/2) / math.sqrt(scale)
+                        C_tilde_2 = (math.log(cutoff) - sample_theta_based_performance) / math.sqrt(scale)
+                        inverse_mills_ratio = norm.cdf(loc=0, scale=1, x=C_tilde_1) / norm.cdf(loc=0, scale=1, x=C_tilde_2)
+                        l_a = math.exp(sample_theta_based_performance + scale/2) + (1 - cdf) * (math.log(10*cutoff) - math.exp(sample_theta_based_performance + scale/2) * inverse_mills_ratio )
+                    else:
+                        C_tilde = (math.log(cutoff) - sample_theta_based_performance) / math.sqrt(scale)
+                        inverse_mills_ratio = norm.pdf(loc=0, scale=1, x=C_tilde) / norm.cdf(loc=0, scale=1, x=C_tilde)
+                        l_a = sample_theta_based_performance + (1 - cdf) * (math.log(10*cutoff) - sample_theta_based_performance + math.sqrt(scale) * inverse_mills_ratio )
                 else:
                     l_a = sample_theta_based_performance
 
@@ -156,6 +163,8 @@ class Thompson:
 
     def get_name(self):
         name = 'thompson'
+        if self.true_expected_value:
+            name = 'e_' + name
         if self.revisited:
             name = name + "_rev"
         if self.buckley_james:
