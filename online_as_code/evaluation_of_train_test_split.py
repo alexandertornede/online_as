@@ -140,7 +140,7 @@ def write_plot_file(values_to_save: list, file_name_prefix:str, scenario_name: s
     if not os.path.exists('output/' + file_name_prefix + "/"):
         os.makedirs('output/' + file_name_prefix + "/")
     complete_instance_wise_string = ';'.join(str(v) for v in values_to_save)
-    f = open("output/" + file_name_prefix + "/" + scenario_name + "+" + str(fold) + "+" + approach + ".txt", "a")
+    f = open("output/" + file_name_prefix + "/" + scenario_name + "+" + str(fold) + "+" + approach + ".txt", "w")
     f.write(complete_instance_wise_string + "\n")
     f.close()
 

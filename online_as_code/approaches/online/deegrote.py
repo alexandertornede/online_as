@@ -2,7 +2,7 @@ import numpy as np
 from numpy import ndarray
 from sklearn.base import clone
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import Normalizer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 import forestci as fci
@@ -17,7 +17,7 @@ class Degroote:
 
     def __init__(self, bandit_selection_strategy, regression_model=RandomForestRegressor(n_jobs=1, n_estimators=100), standard_deviation_lower_bound=1.0):
         self.pure_regression_model = regression_model
-        self.regression_model = Pipeline([('imputer', SimpleImputer()), ('scaler', MinMaxScaler(clip=True)), ('model', regression_model)])
+        self.regression_model = Pipeline([('imputer', SimpleImputer()), ('scaler', Normalizer()), ('model', regression_model)])
         self.bandit_selection_strategy = bandit_selection_strategy
         self.standard_deviation_lower_bound = standard_deviation_lower_bound
 
@@ -37,7 +37,7 @@ class Degroote:
     def train_with_single_instance(self, features: ndarray, algorithm_id: int, performance: float, cutoff_time: float):
         #store new training sample
         self.current_training_X_map[algorithm_id].append(features)
-        self.current_training_y_map[algorithm_id].append(performance)
+        self.current_training_y_map[algorithm_id].append(min(performance, cutoff_time))
 
         if not np.isnan(features).any():
             self.non_nan_training_sample_checking_map[algorithm_id] = True
