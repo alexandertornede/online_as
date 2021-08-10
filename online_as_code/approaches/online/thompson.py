@@ -23,8 +23,6 @@ class Thompson:
         self.current_b_map = None
         self.current_A_map = None
         self.data_for_algorithm = None
-        self.maximum_feature_values = None
-        self.minimum_feature_values = None
         self.mean_feature_values = None
         self.number_of_algorithm_selections_with_timeout = None
         self.number_of_algorithm_selections = None
@@ -45,8 +43,6 @@ class Thompson:
                 self.number_of_algorithm_selections[algorithm_id] = 0
                 self.data_for_algorithm[algorithm_id] = False
 
-            self.maximum_feature_values = np.full(features.size, -1000000)
-            self.minimum_feature_values = np.full(features.size, +1000000)
             self.mean_feature_values = np.full(features.size, 0)
 
         self.data_for_algorithm[algorithm_id] = True
@@ -54,7 +50,6 @@ class Thompson:
         imputed_sample = self.impute_sample(features)
         self.update_imputer(imputed_sample)
 
-        self.update_scaler(imputed_sample)
         scaled_sample = self.scale_sample(imputed_sample)
 
         self.number_of_algorithm_selections[algorithm_id] = self.number_of_algorithm_selections[algorithm_id] + 1
@@ -99,10 +94,6 @@ class Thompson:
             imputed_sample[0] = 0.000000001
         return imputed_sample
 
-    def update_scaler(self, sample: ndarray):
-        self.minimum_feature_values = np.minimum(self.minimum_feature_values, sample)
-        self.maximum_feature_values = np.maximum(self.maximum_feature_values, sample)
-
     def scale_sample(self, sample: ndarray):
         return sample / np.linalg.norm(sample)
 
@@ -117,9 +108,9 @@ class Thompson:
             scaled_sample = self.impute_sample(features)
             scaled_sample = self.scale_sample(scaled_sample)
 
-        cdfs_debug = list()
-        sample_based_performance_debug = list()
-        scale_debug = list()
+        # cdfs_debug = list()
+        # sample_based_performance_debug = list()
+        # scale_debug = list()
         for algorithm_id in range(self.number_of_algorithms):
             #if we have samples for that algorithms
             if self.is_data_for_algorithm_present(algorithm_id):
@@ -130,12 +121,12 @@ class Thompson:
 
                 sampled_theta = np.random.multivariate_normal(mean=theta_a, cov=self.sigma*A_inv)
                 sample_theta_based_performance = np.dot(scaled_sample, sampled_theta)
-                sample_based_performance_debug.append(sample_theta_based_performance)
+                # sample_based_performance_debug.append(sample_theta_based_performance)
                 if self.revisited:
                     scale = self.sigma*np.linalg.multi_dot([scaled_sample, self.sigma*A_inv, scaled_sample])
-                    scale_debug.append(scale)
+                    # scale_debug.append(scale)
                     cdf = norm.cdf(x=math.log(cutoff), loc=sample_theta_based_performance, scale=scale)
-                    cdfs_debug.append(cdf)
+                    # cdfs_debug.append(cdf)
                     if self.true_expected_value:
                         C_tilde_1 = (math.log(cutoff) - sample_theta_based_performance - scale/2) / math.sqrt(scale)
                         C_tilde_2 = (math.log(cutoff) - sample_theta_based_performance) / math.sqrt(scale)
