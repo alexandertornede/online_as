@@ -125,8 +125,8 @@ class LinUCBPerformance:
                     o_a = performance - bound
                     p_a = performance + bound
                     if self.true_expected_value:
-                        C_hat_1 = (math.log(cutoff) - performance - (self.sigma ** 2))/self.sigma
-                        C_hat_2 = (math.log(cutoff) - performance)/self.sigma
+                        C_hat_1 = (math.log(cutoff) - o_a - (self.sigma ** 2))/self.sigma
+                        C_hat_2 = (math.log(cutoff) - p_a)/self.sigma
                         mills_ratio = norm.cdf(loc=0, scale=1, x=C_hat_1) / norm.cdf(loc=0, scale=1, x=C_hat_2)
 
                         l_a = math.exp(o_a + (self.sigma ** 2) /2) + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - math.exp(p_a + (self.sigma ** 2) /2)*mills_ratio)
