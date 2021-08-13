@@ -1,55 +1,7 @@
-from plot_generation import load_configuration
-from plot_generation import get_dataframe_for_sql_query
+from analysis_utility import load_configuration
 from aslib_scenario.aslib_scenario import ASlibScenario
 import numpy as np
-from sklearn import datasets, linear_model
-import matplotlib.pyplot as plt
-
-def generate_superset_vs_linear_plot():
-    config = load_configuration()
-
-    scenario_statistics = compute_statistics()
-
-    scenario_names = config["EXPERIMENTS"]["scenarios"].split(",")
-
-    dataframe = get_dataframe_for_sql_query("SELECT * FROM (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `bugfix_in_bound_adaptive_lambda` WHERE metric='par10' GROUP BY scenario_name, approach, metric UNION SELECT * FROM `server_results_standard_v2_aggregated`) as T WHERE approach != 'super_set_online_linear_regression_UCB' AND approach NOT LIKE 'degroote%%' ORDER BY scenario_name, avg_result")
-
-    y_values = list()
-    x_values = list()
-    for scenario in scenario_names:
-        scenario_results = dataframe.loc[dataframe['scenario_name'] == scenario] # & dataframe['approach'] == 'super_set_online_linear_regression_UCB'
-        super_set_result = scenario_results.loc[scenario_results['approach'] == 'super_set_online_linear_regression_lambda=0.5_UCB']['avg_result'].values[0]
-        lr_result = scenario_results.loc[scenario_results['approach'] == 'online_linear_regression_cutoff_scaled_UCB']['avg_result'].values[0]
-        division = super_set_result / lr_result
-        y_values.append(division)
-
-        x_values.append(scenario_statistics[scenario]['average_timeout_percentage'])
-
-    print()
-    plt.scatter(x_values, y_values)
-    plt.axhline(y=1, color='r', linestyle='-')
-    plt.xlabel("%C")
-    plt.ylabel("super_set - LinUCB relation")
-
-    regr = linear_model.LinearRegression()
-    regr.fit(X=np.asarray(x_values).reshape(-1,1), y=y_values)
-    dummy_x = np.arange(0,1,0.01)
-    y_pred = regr.predict(dummy_x.reshape(-1,1))
-
-    plt.plot(dummy_x, y_pred, linestyle="dashed")
-
-    plt.show()
-    print()
-    # ax.set_xlabel("Scenario")
-    # ax.set_ylabel("PAR10")
-    # ax.legend(['oracle', 'AS-oracle', 'SBS', 'SBAS'])
-    # vals = ax.get_yticks()
-    # for tick in vals:
-    #     ax.axhline(y=tick, linestyle='dashed', alpha=0.4, color='#6d6e6d', zorder=1)
-    #
-    # name = 'plots/bars_small.pdf' if small_scenarios else 'plots/bars_large.pdf'
-    # plt.savefig(name, bbox_inches = "tight")
-    # print(dataframe.to_latex(index=False, float_format="%.3f"))
+from pandas import DataFrame
 
 def compute_statistics():
     config = load_configuration()
@@ -91,7 +43,7 @@ def compute_percentage_timeouts_for_scenario(scenario: ASlibScenario, properties
                 timeouts_per_instance[instance_id] += 1
         # print("a: " + str(algorithm_id) + " = " + str(timeouts_per_algorithm[algorithm_id]/num_instances))
 
-    properties_dict["timeout_percentage_per_algorithm"] = timeouts_per_algorithm/num_instances
+    #properties_dict["timeout_percentage_per_algorithm"] = timeouts_per_algorithm/num_instances
     properties_dict["average_timeout_percentage"] = np.mean(timeouts_per_algorithm)/num_instances
     properties_dict["median_timeout_percentage"] = np.median(timeouts_per_algorithm)/num_instances
     properties_dict["min_timeout_percentage"] = np.min(timeouts_per_algorithm)/num_instances
@@ -104,5 +56,6 @@ def compute_percentage_timeouts_for_scenario(scenario: ASlibScenario, properties
     # print("max: " + str(np.max(timeouts_per_algorithm/num_instances)))
 
 
-#compute_statistics()
-generate_superset_vs_linear_plot()
+scenario_to_properties_dict = compute_statistics()
+dataframe = DataFrame.from_dict(scenario_to_properties_dict, orient='index', columns=['num_instances','num_features','num_algorithms','cutoff-time','average_timeout_percentage','median_timeout_percentage','min_timeout_percentage','max_timeout_percentage'])
+print(dataframe.to_latex(float_format="%.2f", header=['#I','#F','#A','C','T','MT','minT','maxT']))
