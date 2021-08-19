@@ -28,3 +28,5 @@ online_as_code/conf/experiment_configuration.cfg
 online_as_code/singularity/*.simg
 online_as_code/.idea
 online_as_code/data
+online_as_code/output
+online_as_code/server_output
