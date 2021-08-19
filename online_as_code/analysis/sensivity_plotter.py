@@ -84,6 +84,6 @@ plot(tablename='server_sensitivity', parameter='sigma', output_directory='../fig
 #lambda analysis of Thompson
 plot(tablename='server_sensitivity', parameter='lambda', output_directory='../figures/sensitivity', approach_like='bj_e_thompson_rev_sigma=1.0_lambda=%', x_min=0, x_max=1.1)
 #sigma analysis of LinUCB
-plot(tablename='server_sensitivity', parameter='sigma', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=%_alpha=1', x_min=0.5, x_max=10.5)
+plot(tablename='server_sensitivity', parameter='sigma', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=%_alpha=1.0', x_min=0.5, x_max=10.5)
 #alpha analysis of LinUCB
 plot(tablename='server_sensitivity', parameter='alpha', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=1.0_alpha=%', x_min=0, x_max=2.1)

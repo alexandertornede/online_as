@@ -15,7 +15,7 @@ logger.addHandler(logging.StreamHandler())
 
 class LinUCBPerformance:
 
-    def __init__(self, bandit_selection_strategy, alpha:float, new_tricks:bool, ignore_censored:bool, revisited: bool, true_expected_value: bool, sigma:float=1 ):
+    def __init__(self, bandit_selection_strategy, alpha:float, new_tricks:bool, ignore_censored:bool, revisited: bool, true_expected_value: bool, sigma:float = 1.0):
         self.bandit_selection_strategy = bandit_selection_strategy
         self.all_training_samples = list()
         self.number_of_samples_seen = 0

@@ -69,7 +69,7 @@ def create_approach(approach_names):
                 approaches.append(Thompson(sigma=1.0, lamda=lamda, buckley_james=True, revisited=True, true_expected_value=True))
         if approach_name == 'linucb_sensivity_sigma':
             for sigma in np.arange(1,10.5, 0.5):
-                approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=sigma, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
+                approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1.0, sigma=sigma, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
         if approach_name == 'linucb_sensivity_alpha':
             for alpha in np.arange(0.1,2.1,0.1):
                 approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=alpha, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
