@@ -61,6 +61,18 @@ def log_result(result):
 def create_approach(approach_names):
     approaches = list()
     for approach_name in approach_names:
+        if approach_name == 'thompson_sensivity_sigma':
+            for sigma in np.arange(1,10.5, 0.5):
+                approaches.append(Thompson(sigma=sigma, lamda=0.5, buckley_james=True, revisited=True, true_expected_value=True))
+        if approach_name == 'thompson_sensivity_lambda':
+            for lamda in np.arange(0.05,1.05,0.05):
+                approaches.append(Thompson(sigma=1.0, lamda=lamda, buckley_james=True, revisited=True, true_expected_value=True))
+        if approach_name == 'linucb_sensivity_sigma':
+            for sigma in np.arange(1,10.5, 0.5):
+                approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=sigma, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
+        if approach_name == 'linucb_sensivity_alpha':
+            for alpha in np.arange(0.1,2.1,0.1):
+                approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=alpha, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
         if approach_name == 'online_oracle':
             approaches.append(OnlineOracle())
         if approach_name == 'thompson':

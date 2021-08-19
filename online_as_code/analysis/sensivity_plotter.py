@@ -4,6 +4,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 import configparser
 import re
+from analysis_utility import create_directory_if_not_exists, clean_algorithm_name
+from sqlalchemy import create_engine, text
 
 class SQLConnection:
 
@@ -22,20 +24,20 @@ class SQLConnection:
     def get_dataframe_for_sql_query(self, sql_query: str):
         db_credentials = self.get_database_credential_string()
         db_connection = create_engine(db_credentials)
-        return pd.read_sql(sql_query, con=db_connection)
+        return pd.read_sql(text(sql_query), con=db_connection)
 
     def get_database_credential_string(self):
         return "mysql+pymysql://" + self.db_username + ":" + self.db_password + "@" + self.db_host + "/" + self.db_database
 
 
-def plot(tablename: str, parameter: str) -> None:
+def plot(tablename: str, parameter: str, output_directory:str, approach_like:str, x_min:float, x_max:float) -> None:
     """
     Generate one plot for each scenario from the specified table where the parameter matches.
     :param tablename: name of the sql-table
     :param parameter: name of the parameter
     """
-
-    table = database.get_query("SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) FROM %s WHERE metric='par10' GROUP BY scenario_name, approach, metric" % tablename)
+    sql_query = "SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) FROM %s WHERE metric='par10' AND approach LIKE '%s' GROUP BY scenario_name, approach, metric" % (tablename, approach_like)
+    table = database.get_query(sql_query)
 
     table['approach'] = table['approach'].str.replace('_UCB', '0_UCB')
 
@@ -49,14 +51,10 @@ def plot(tablename: str, parameter: str) -> None:
         ax.grid(axis='y', linestyle='-', linewidth=1)
         # ax.set_ylim(bottom=800)
         # ax.set_ylim(top=1000)
-        ax.set_xlim(left=0)
-        ax.set_xlim(right=1)
+        ax.set_xlim(left=x_min, right=x_max)
 
         plt.title(scenario)
-        if parameter == 'lambda':
-            plt.xlabel(r'$\lambda$')
-        else:
-            plt.xlabel(parameter)
+        plt.xlabel(r'$\%s$' % parameter)
         plt.ylabel("PAR10")
 
         a = data['approach'].array.to_numpy()
@@ -73,9 +71,19 @@ def plot(tablename: str, parameter: str) -> None:
 
         ax.errorbar(x, y, yerr=yerr, linestyle='none', marker='o')
         plt.show()
-        fig.savefig("plots/%s.pdf" % scenario, bbox_inches='tight')
+
+        create_directory_if_not_exists(output_directory)
+        filename = '/%s_%s_%s.pdf' % (scenario, parameter, clean_algorithm_name(approach_like))
+        fig.savefig(output_directory + filename, bbox_inches='tight')
 
 
 
 database = SQLConnection(config_path='../conf/experiment_configuration.cfg')
-plot(tablename='sensitivity_analysis', parameter='lambda')
+#sigma analysis of Thompson
+plot(tablename='server_sensitivity', parameter='sigma', output_directory='../figures/sensitivity', approach_like='bj_e_thompson_rev_sigma=%_lambda=0.5', x_min=0.5, x_max=10.5)
+#lambda analysis of Thompson
+plot(tablename='server_sensitivity', parameter='lambda', output_directory='../figures/sensitivity', approach_like='bj_e_thompson_rev_sigma=1.0_lambda=%', x_min=0, x_max=1.1)
+#sigma analysis of LinUCB
+plot(tablename='server_sensitivity', parameter='sigma', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=%_alpha=1', x_min=0.5, x_max=10.5)
+#alpha analysis of LinUCB
+plot(tablename='server_sensitivity', parameter='alpha', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=1.0_alpha=%', x_min=0, x_max=2.1)

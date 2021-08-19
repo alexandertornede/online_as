@@ -175,4 +175,5 @@ class LinUCBPerformance:
         if self.true_expected_value:
             name = 'e_' + name
         name += '_sigma={}'.format(str(self.sigma))
+        name += '_alpha={}'.format(str(self.alpha))
         return name

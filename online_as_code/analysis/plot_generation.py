@@ -10,6 +10,7 @@ import re
 import os
 from analysis_utility import load_configuration
 from analysis_utility import clean_algorithm_name
+from analysis_utility import create_directory_if_not_exists
 
 def bold_extreme_values(data, best=-1, second_best=-1, decimal_places:int  = 2):
     if data == best:
@@ -120,8 +121,7 @@ def generate_ablation_plots(algorithm: str):
     plt.xlabel('prediction time in s')
 
     figure_directory = 'figures'
-    if not os.path.exists(figure_directory):
-        os.makedirs(figure_directory)
+    create_directory_if_not_exists(figure_directory)
 
     plt.tight_layout()
     plt.savefig(figure_directory + '/ablation_' + algorithm + '.pdf')
@@ -145,14 +145,13 @@ def generate_competitor_plots():
     plt.xlabel('prediction time in s')
 
     figure_directory = 'figures'
-    if not os.path.exists(figure_directory):
-        os.makedirs(figure_directory)
+    create_directory_if_not_exists(figure_directory)
 
     plt.tight_layout()
     plt.savefig(figure_directory + '/competitor_plot.pdf')
 
 
-def get_dataframe_for_sql_query(sql_query: str ):
+def get_dataframe_for_sql_query(sql_query: str):
     db_credentials = get_database_credential_string()
     return pd.read_sql(text(sql_query), con=db_credentials)
 
