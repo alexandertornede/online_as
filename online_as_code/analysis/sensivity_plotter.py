@@ -73,8 +73,24 @@ def plot(tablename: str, parameter: str, output_directory:str, approach_like:str
         plt.show()
 
         create_directory_if_not_exists(output_directory)
-        filename = '/%s_%s_%s.pdf' % (scenario, parameter, clean_algorithm_name(approach_like))
+        cleaned_approach_name = clean_algorithm_name(approach_like)
+        filename = '/%s_%s_%s.pdf' % (scenario, parameter, cleaned_approach_name)
         fig.savefig(output_directory + filename, bbox_inches='tight')
+
+    print_latex_figure_code(scenarios=table.scenario_name.unique(), approach=cleaned_approach_name, parameter=parameter)
+
+
+def print_latex_figure_code(approach, parameter, scenarios):
+    code = '\\begin{figure}[htb]\n\t\\centering\n'
+    for scenario in sorted(scenarios):
+        code += '\\begin{subfigure}{0.25\\textwidth}\n'
+        code += '\t\\includegraphics[width=\linewidth]{img/sensitivity/%s_%s_%s.pdf}\n' % (scenario, parameter, approach)
+        code += '\t\\label{fig:app_sensitivity_%s_%s_%s}\n' % (scenario, parameter, approach)
+        code += '\\end{subfigure}\n'
+    code += '\\caption{Sensitivity analysis for parameter %s of approach %s.}\n' % ('$\\' + parameter + '$', approach.replace('_','\_'))
+    code += '\\label{fig:app_sensitivity_%s_%s}\n' % (approach, parameter)
+    code += '\\end{figure}\n'
+    print(code)
 
 
 

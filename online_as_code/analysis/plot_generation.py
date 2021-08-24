@@ -29,6 +29,45 @@ def format_number(data, decimal_places: int = 2, maximum_length_before_comma: in
         formated_string = format_string_scientific_notation.format(data)
     return formated_string
 
+
+def generate_improvement_over_sbs_barchart(sql_query:str):
+    df = generate_npar10_dataframe(sql_query)
+
+    #make sure that the Degroote variants are at the end and Thompson first
+    df.columns = (df.columns.to_series()
+                  .apply(lambda r: 'z_' + r if r.lower().startswith('degroo') else r))
+    df.columns = (df.columns.to_series()
+                  .apply(lambda r: 'aa_' + r if 'thompson' in r.lower() else r))
+    df = df.reindex(sorted(df.columns), axis=1)
+    df.columns = (df.columns.to_series()
+                  .apply(lambda r: r.replace('z_', '') if r.lower().startswith('z_') else r))
+    df.columns = (df.columns.to_series()
+                  .apply(lambda r: r.replace('aa_', '') if r.lower().startswith('aa_') else r))
+
+
+    number_of_scenarios_better_than_sbs= df[df < 1].count()
+    total_number_of_scenarios = df.count()
+    number_of_scenarios_equal_or_worse_than_sbs = total_number_of_scenarios - number_of_scenarios_better_than_sbs
+
+    categories = ['improvement','no improvement']
+
+    labels = df.columns.to_numpy()
+    labels = np.array([clean_algorithm_name(label) for label in labels])
+
+    plt.bar(x = labels, height=number_of_scenarios_better_than_sbs, color='forestgreen')
+    plt.bar(x = labels, height=number_of_scenarios_equal_or_worse_than_sbs, bottom=number_of_scenarios_better_than_sbs, color='grey')
+
+    plt.xlabel('Approaches')
+    plt.ylabel('Number of scenarios')
+    plt.title('(No) Improvement over SBS')
+    plt.legend(categories)
+    plt.tight_layout()
+
+    figure_directory = 'figures'
+    create_directory_if_not_exists(figure_directory)
+
+    plt.savefig(figure_directory + '/sbs_improvement_plot.pdf')
+
 def generate_result_table(sql_query:str, npar10:bool = False, stddev: bool = False, decimal_places: int = 2, show_avg_and_median: bool = True):
     if npar10:
         df = generate_npar10_dataframe(sql_query)
@@ -169,14 +208,8 @@ def generate_preliminary_result_table():
     dataframe = dataframe.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
     print(dataframe.to_latex(index=False, float_format="%.3f"))
 
-#generate_level_N_normalized_par10_table(level=1)
-#generate_normalized_par10_table_normalized_by_level_0()
-#generate_sbs_vbs_change_plots(True)
-#generate_sbs_vbs_change_plots(False)
-#generate_preliminary_result_table()
-#print("FULL:")
-#generate_result_table_with_ranks("SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE approach LIKE '%e\_%' AND metric='par10' AND approach not LIKE 'e_thompson%' AND approach not LIKE 'bj_e_thompson_sig%' AND approach != 'feature_free_epsilon_greedy_par10' GROUP BY scenario_name, approach, metric ORDER BY scenario_name, avg_result")
-#generate_result_table("SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE approach LIKE '%e\_%' AND metric='par10' AND approach not LIKE 'e_thompson%' AND approach not LIKE 'bj_e_thompson_sig%' AND approach != 'feature_free_epsilon_greedy_par10' GROUP BY scenario_name, approach, metric ORDER BY scenario_name, avg_result")
+
+generate_improvement_over_sbs_barchart("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='par10' AND approach LIKE '%e\_%' AND  (approach LIKE 'e_thompson_s%' OR approach LIKE 'bj_e_thompson_rev%' OR approach LIKE 'e_rand_bclinucb_s%' OR approach LIKE 'e_rand_blinducb_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result")
 
 generate_ablation_plots('ucb')
 generate_ablation_plots('thompson')
