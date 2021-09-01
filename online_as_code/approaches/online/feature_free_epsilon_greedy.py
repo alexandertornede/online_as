@@ -40,6 +40,6 @@ class FeatureFreeEpsilonGreedy:
         return self.bandit_selection_strategy.select_based_on_predicted_performances(np.asarray(predicted_performances), None)
 
     def get_name(self):
-        return 'feature_free_epsilon_greedy_' + self.imputation_strategy
+        return 'feature_free_epsilon_greedy_' + self.imputation_strategy + "_epsilon=" + str(self.bandit_selection_strategy.epsilon)
 
 

@@ -16,16 +16,16 @@ def generate_latex_code_for_figure_inclusion(directory_of_figures:str , subfigur
         if filename.endswith(".pdf"):
             latex_code += "\\begin{subfigure}{" + str(subfigure_size) + "\\textwidth}\n"
             latex_code += "\t \includegraphics[width=\linewidth]{img/runtime_plots/" +  filename + "}\n"
-            #latex_code += "\t \\caption{}\n"
+            latex_code += "\t \\caption{}\n"
             latex_code += "\t \\label{fig:app_runtime_" + filename.lower().replace('.pdf','') + "}\n"
             latex_code += "\\end{subfigure}\n"
         if i> 0 and i % 17 == 0:
             latex_code += "\\caption{Prediction time in seconds of a selection of approaches for the corresponding scenario.}\n"
             latex_code += "\\label{fig:app_runtime}\n"
-            latex_code += "\\end{figure}"
+            latex_code += "\\end{figure}\n"
             latex_code += "\\begin{figure}[htb]\n\t\\ContinuedFloat\n\t\\centering\n"
     latex_code += "\\caption{(Cont.) Prediction time in seconds of a selection of approaches for the corresponding scenario.}\n"
-    latex_code += "\\label{fig:app_runtime}\n"
+    latex_code += "\\label{fig:app_runtime_%s}\n" % str(int(i/17))
     latex_code += "\\end{figure}"
     print(latex_code)
 

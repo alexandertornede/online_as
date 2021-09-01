@@ -110,19 +110,19 @@ def create_approach(approach_names):
         if approach_name == 'e_blinducb':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=False, ignore_censored=True, true_expected_value=True))
         if approach_name == 'e_blinducb_rev':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=True, ignore_censored=True, true_expected_value=True))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=False, revisited=True, ignore_censored=True, true_expected_value=True))
         if approach_name == 'e_rand_blinducb':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=False, ignore_censored=True, true_expected_value=True))
         if approach_name == 'e_rand_blinducb_rev':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=True, ignore_censored=True, true_expected_value=True))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=True, revisited=True, ignore_censored=True, true_expected_value=True))
         if approach_name == 'e_bclinucb':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=False, ignore_censored=False, true_expected_value=True))
         if approach_name == 'e_bclinucb_rev':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=True, ignore_censored=False, true_expected_value=True))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=False, revisited=True, ignore_censored=False, true_expected_value=True))
         if approach_name == 'e_rand_bclinucb':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=False, ignore_censored=False, true_expected_value=True))
         if approach_name == 'e_rand_bclinucb_rev':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
         if approach_name == 'degroote_epsilon_greedy':
             approaches.append(Degroote(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05)))
         if approach_name == 'degroote_linear_epsilon_greedy':
@@ -133,6 +133,9 @@ def create_approach(approach_names):
             approaches.append(CoxRegression(bandit_selection_strategy=EpsilonGreedy(epsilon=0.05), learning_rate=0.001))
         if approach_name == 'feature_free_epsilon_greedy_cutoff':
             approaches.append(FeatureFreeEpsilonGreedy(imputation_strategy='cutoff'))
+        if approach_name == 'feature_free_epsilon_greedy_cutoff_sensitivity':
+            for epsilon in np.arange(0.0,0.2, 0.01):
+                approaches.append(FeatureFreeEpsilonGreedy(imputation_strategy='cutoff',bandit_selection_strategy=EpsilonGreedy(epsilon=epsilon)))
         if approach_name == 'feature_free_epsilon_greedy_par10':
             approaches.append(FeatureFreeEpsilonGreedy(imputation_strategy='par10'))
         # if approach_name == 'ExpectationSurvivalForest':

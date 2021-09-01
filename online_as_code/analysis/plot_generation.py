@@ -113,7 +113,7 @@ def generate_result_table(sql_query:str, npar10:bool = False, stddev: bool = Fal
     # Set column header to bold title case
     df.columns = (df.columns.to_series()
                   .apply(lambda r:
-                         '\\begin{rotate}{90}' + clean_algorithm_name(r).replace('_', '\_') + '\\end{rotate}'))
+                         '\\multicolumn{1}{c}{\\rotatebox{90}{' + clean_algorithm_name(r).replace('_', '\_') + '}}'))
 
     print(df.to_latex(index=True, escape=False))
 
@@ -121,18 +121,20 @@ def generate_npar10_dataframe(sql_query: str):
     online_oracle_df = get_dataframe_for_sql_query("SELECT scenario_name, approach, AVG(result) as avg_result FROM `server_results_all_variants` WHERE metric='par10' and approach = 'online_oracle' GROUP BY scenario_name, approach, metric ORDER BY scenario_name")
     online_oracle_df = online_oracle_df.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
     online_oracle_series = pd.Series(online_oracle_df['online_oracle'], online_oracle_df.index)
-    ff_greedy_df = get_dataframe_for_sql_query("SELECT scenario_name, approach, AVG(result) as avg_result FROM `server_results_all_variants` WHERE metric='par10' and approach = 'feature_free_epsilon_greedy_cutoff' GROUP BY scenario_name, approach, metric ORDER BY scenario_name")
-    ff_greedy_df = ff_greedy_df.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
-    ff_greedy_series = pd.Series(ff_greedy_df['feature_free_epsilon_greedy_cutoff'], ff_greedy_df.index)
+    #ff_greedy_df = get_dataframe_for_sql_query("SELECT scenario_name, approach, AVG(result) as avg_result FROM `server_results_all_variants` WHERE metric='par10' and approach = 'feature_free_epsilon_greedy_cutoff' GROUP BY scenario_name, approach, metric ORDER BY scenario_name")
+    #ff_greedy_df = ff_greedy_df.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
+    #ff_greedy_series = pd.Series(ff_greedy_df['feature_free_epsilon_greedy_cutoff'], ff_greedy_df.index)
 
     dataframe = get_dataframe_for_sql_query(sql_query)
     df = dataframe.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
 
 
-    denominator = ff_greedy_df.sub(online_oracle_series, axis='index')
-    denominator_series = pd.Series(denominator['feature_free_epsilon_greedy_cutoff'], denominator.index)
+    #denominator = ff_greedy_df.sub(online_oracle_series, axis='index')
+    #denominator_series = pd.Series(denominator['feature_free_epsilon_greedy_cutoff'], denominator.index)
+    denominator_series = online_oracle_series
 
-    nominator = df.sub(online_oracle_series, axis='index')
+    #nominator = df.sub(online_oracle_series, axis='index')
+    nominator = df
 
     npar10_df = (nominator).div(denominator_series, axis='index')
     return npar10_df
@@ -148,16 +150,21 @@ def generate_ablation_plots(algorithm: str):
     time_mean = time_df.mean()
     par10_query = "SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='par10' AND approach LIKE '%e\_%' AND  approach LIKE '%" + algorithm_stub +"%' AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric ORDER BY scenario_name, avg_result"
     npar10_df = generate_npar10_dataframe(par10_query)
-    npar10_mean = npar10_df.mean()
+    npar10_mean = npar10_df.median()
 
     fig, ax = plt.subplots()
-    markers=['o', 'x', 's', 'd', '+', '^','p', '*']
+    if algorithm == 'ucb':
+        markers = ['2', 'H', '.', 'v', '*', '+','^', 'X']
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#e377c2', '#9467bd', '#8c564b', '#7f7f7f', '#bcbd22', '#17becf']
+    if algorithm == 'thompson':
+        markers = ['o', '1', 'p', 'P']
+        colors = ['#1f77b4', '#ff7f0e', '#e377c2', '#d62728']
     for i,name in enumerate(npar10_mean.index):
         short_name = clean_algorithm_name(name)
-        ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i])
+        ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i], c=colors[i])
     ax.legend()
-    plt.ylabel('npar10')
-    plt.xlabel('prediction time in s')
+    plt.ylabel('rePAR10')
+    plt.xlabel('avg. prediction time in seconds')
 
     figure_directory = 'figures'
     create_directory_if_not_exists(figure_directory)
@@ -166,13 +173,15 @@ def generate_ablation_plots(algorithm: str):
     plt.savefig(figure_directory + '/ablation_' + algorithm + '.pdf')
 
 def generate_competitor_plots():
-    time_query = "SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='learner_runtime_s_per_step' AND approach LIKE '%e\_%' AND  (approach LIKE 'e_thompson_s%' OR approach LIKE 'bj_e_thompson_rev%' OR approach LIKE 'e_rand_bclinucb_s%' OR approach LIKE 'e_rand_blinducb_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_degroote_clipped` WHERE metric='learner_runtime_s_per_step' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result"
+    placeholder = 'PLACEHOLDER'
+    query = "SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='" + placeholder + "' AND approach LIKE '%e\_%' AND  (approach LIKE 'e_thompson_rev_s%' OR approach LIKE 'bj_e_thompson_rev%' OR approach LIKE 'e_rand_bclinucb_s%' OR approach LIKE 'e_rand_blinducb_rev_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_degroote_clipped` WHERE metric='" + placeholder + "' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result"
+    time_query = query.replace(placeholder, 'learner_runtime_s_per_step')
     time_df = get_dataframe_for_sql_query(time_query)
     time_df = time_df.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
     time_mean = time_df.mean()
-    par10_query = "SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='par10' AND approach LIKE '%e\_%' AND  (approach LIKE 'e_thompson_s%' OR approach LIKE 'bj_e_thompson_rev%' OR approach LIKE 'e_rand_bclinucb_s%' OR approach LIKE 'e_rand_blinducb_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_degroote_clipped` WHERE metric='par10' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result"
+    par10_query = query.replace(placeholder, 'par10')
     npar10_df = generate_npar10_dataframe(par10_query)
-    npar10_mean = npar10_df.mean()
+    npar10_mean = npar10_df.median()
 
     fig, ax = plt.subplots()
     markers=['o', 'x', 's', 'd', '+', '^','p', '*']
@@ -180,8 +189,8 @@ def generate_competitor_plots():
         short_name = clean_algorithm_name(name)
         ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i])
     ax.legend()
-    plt.ylabel('npar10')
-    plt.xlabel('prediction time in s')
+    plt.ylabel('rePAR10')
+    plt.xlabel('avg. prediction time in seconds')
 
     figure_directory = 'figures'
     create_directory_if_not_exists(figure_directory)
