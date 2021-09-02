@@ -131,7 +131,8 @@ class Thompson:
                         C_tilde_1 = (math.log(cutoff) - sample_theta_based_performance - scale/2) / math.sqrt(scale)
                         C_tilde_2 = (math.log(cutoff) - sample_theta_based_performance) / math.sqrt(scale)
                         inverse_mills_ratio = norm.cdf(loc=0, scale=1, x=C_tilde_1) / norm.cdf(loc=0, scale=1, x=C_tilde_2)
-                        l_a = math.exp(sample_theta_based_performance + scale/2) + (1 - cdf) * (math.log(10*cutoff) - math.exp(sample_theta_based_performance + scale/2) * inverse_mills_ratio )
+                        E_tilde_C = math.exp(sample_theta_based_performance + scale/2) * inverse_mills_ratio
+                        l_a = E_tilde_C + (1 - cdf) * (math.log(10*cutoff) - E_tilde_C)
                     else:
                         C_tilde = (math.log(cutoff) - sample_theta_based_performance) / math.sqrt(scale)
                         inverse_mills_ratio = norm.pdf(loc=0, scale=1, x=C_tilde) / norm.cdf(loc=0, scale=1, x=C_tilde)

@@ -72,7 +72,10 @@ def create_approach(approach_names):
                 approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1.0, sigma=sigma, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
         if approach_name == 'linucb_sensivity_alpha':
             for alpha in np.arange(0.1,2.1,0.1):
-                approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=alpha, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
+                approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=alpha, sigma=10.0, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
+        if approach_name == 'linucb_sensivity_randsigma':
+            for randsigma in np.arange(0.025,0.55,0.025):
+                approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1.0, sigma=10.0, randsigma=randsigma, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
         if approach_name == 'online_oracle':
             approaches.append(OnlineOracle())
         if approach_name == 'thompson':
@@ -138,18 +141,6 @@ def create_approach(approach_names):
                 approaches.append(FeatureFreeEpsilonGreedy(imputation_strategy='cutoff',bandit_selection_strategy=EpsilonGreedy(epsilon=epsilon)))
         if approach_name == 'feature_free_epsilon_greedy_par10':
             approaches.append(FeatureFreeEpsilonGreedy(imputation_strategy='par10'))
-        # if approach_name == 'ExpectationSurvivalForest':
-        #     approaches.append(SurrogateSurvivalForest(criterion='Expectation'))
-        # if approach_name == 'PolynomialSurvivalForest':
-        #     approaches.append(SurrogateSurvivalForest(criterion='Polynomial'))
-        # if approach_name == 'GridSearchSurvivalForest':
-        #     approaches.append(SurrogateSurvivalForest(criterion='GridSearch'))
-        # if approach_name == 'ExponentialSurvivalForest':
-        #     approaches.append(SurrogateSurvivalForest(criterion='Exponential'))
-        # if approach_name == 'SurrogateAutoSurvivalForest':
-        #     approaches.append(SurrogateAutoSurvivalForest())
-        # if approach_name == 'PAR10SurvivalForest':
-        #     approaches.append(SurrogateSurvivalForest(criterion='PAR10'))
         if approach_name == 'per_algorithm_regressor':
             approaches.append(PerAlgorithmRegressor())
         if approach_name == 'imputed_per_algorithm_rf_regressor':

@@ -15,7 +15,7 @@ logger.addHandler(logging.StreamHandler())
 
 class LinUCBPerformance:
 
-    def __init__(self, bandit_selection_strategy, alpha:float, new_tricks:bool, ignore_censored:bool, revisited: bool, true_expected_value: bool, sigma:float = 1.0):
+    def __init__(self, bandit_selection_strategy, alpha:float, new_tricks:bool, ignore_censored:bool, revisited: bool, true_expected_value: bool, sigma:float = 10.0, randsigma:float = 0.25):
         self.bandit_selection_strategy = bandit_selection_strategy
         self.all_training_samples = list()
         self.number_of_samples_seen = 0
@@ -25,6 +25,7 @@ class LinUCBPerformance:
         self.revisited = revisited
         self.sigma = sigma
         self.true_expected_value = true_expected_value
+        self.randsigma = randsigma
 
     def initialize(self, number_of_algorithms: int):
         self.number_of_algorithms = number_of_algorithms
@@ -117,7 +118,7 @@ class LinUCBPerformance:
                     w = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * math.log(cutoff)*2
 
                 if self.new_tricks:
-                    bound = self.alpha * w * halfnorm.rvs(loc=0, scale=0.25) #np.random.normal(0, 5.0)
+                    bound = self.alpha * w * halfnorm.rvs(loc=0, scale=self.randsigma) #np.random.normal(0, 5.0)
                 else:
                     bound = self.alpha * w
 
@@ -125,16 +126,22 @@ class LinUCBPerformance:
                     o_a = performance - bound
                     p_a = performance + bound
                     if self.true_expected_value:
-                        C_hat_1 = (math.log(cutoff) - o_a - (self.sigma ** 2))/self.sigma
-                        C_hat_2 = (math.log(cutoff) - p_a)/self.sigma
-                        mills_ratio = norm.cdf(loc=0, scale=1, x=C_hat_1) / norm.cdf(loc=0, scale=1, x=C_hat_2)
 
-                        l_a = math.exp(o_a + (self.sigma ** 2) /2) + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - math.exp(p_a + (self.sigma ** 2) /2)*mills_ratio)
+                        C_hat_1_p = (math.log(cutoff) - p_a - (self.sigma ** 2))/self.sigma
+                        C_hat_2_o = (math.log(cutoff) - o_a)/self.sigma
+                        mills_ratio_1 = norm.cdf(loc=0, scale=1, x=C_hat_1_p) / norm.cdf(loc=0, scale=1, x=C_hat_2_o)
+
+                        C_hat_1_o = (math.log(cutoff) - o_a - (self.sigma ** 2))/self.sigma
+                        C_hat_2_p = (math.log(cutoff) - p_a)/self.sigma
+                        mills_ratio_2 = norm.cdf(loc=0, scale=1, x=C_hat_1_o) / norm.cdf(loc=0, scale=1, x=C_hat_2_p)
+
+
+                        l_a = math.exp(o_a + (self.sigma ** 2) /2)*mills_ratio_1 + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - math.exp(p_a + (self.sigma ** 2) /2)*mills_ratio_2)
                     else:
                         C_hat = (math.log(cutoff) - performance)/self.sigma
-                        mills_ratio = norm.pdf(loc=0, scale=1, x=C_hat) / norm.cdf(loc=0, scale=1, x=C_hat)
+                        mills_ratio_2 = norm.pdf(loc=0, scale=1, x=C_hat) / norm.cdf(loc=0, scale=1, x=C_hat)
 
-                        l_a = o_a + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - p_a + self.sigma * mills_ratio)
+                        l_a = o_a + (1 - norm.cdf(loc=p_a, scale=self.sigma, x=math.log(cutoff))) * (math.log(10*cutoff) - p_a + self.sigma * mills_ratio_2)
                 else:
 
                     l_a = performance - bound
@@ -176,4 +183,5 @@ class LinUCBPerformance:
             name = 'e_' + name
         name += '_sigma={}'.format(str(self.sigma))
         name += '_alpha={}'.format(str(self.alpha))
+        name += '_randsigma={}'.format(str(self.randsigma))
         return name
