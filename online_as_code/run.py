@@ -111,19 +111,19 @@ def create_approach(approach_names):
         if approach_name == 'rand_bclinucb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=False))
         if approach_name == 'e_blinducb':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=False, ignore_censored=True, true_expected_value=True))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=False, revisited=False, ignore_censored=True, true_expected_value=True))
         if approach_name == 'e_blinducb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=False, revisited=True, ignore_censored=True, true_expected_value=True))
         if approach_name == 'e_rand_blinducb':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=False, ignore_censored=True, true_expected_value=True))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=True, revisited=False, ignore_censored=True, true_expected_value=True))
         if approach_name == 'e_rand_blinducb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=True, revisited=True, ignore_censored=True, true_expected_value=True))
         if approach_name == 'e_bclinucb':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=False, revisited=False, ignore_censored=False, true_expected_value=True))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=False, revisited=False, ignore_censored=False, true_expected_value=True))
         if approach_name == 'e_bclinucb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=False, revisited=True, ignore_censored=False, true_expected_value=True))
         if approach_name == 'e_rand_bclinucb':
-            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, new_tricks=True, revisited=False, ignore_censored=False, true_expected_value=True))
+            approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=True, revisited=False, ignore_censored=False, true_expected_value=True))
         if approach_name == 'e_rand_bclinucb_rev':
             approaches.append(LinUCBPerformance(bandit_selection_strategy=UCB(gamma=1), alpha=1, sigma=10, new_tricks=True, revisited=True, ignore_censored=False, true_expected_value=True))
         if approach_name == 'degroote_epsilon_greedy':

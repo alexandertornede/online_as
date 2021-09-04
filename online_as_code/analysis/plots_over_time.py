@@ -19,13 +19,13 @@ def generate_latex_code_for_figure_inclusion(directory_of_figures:str , subfigur
             latex_code += "\t \\caption{}\n"
             latex_code += "\t \\label{fig:app_runtime_" + filename.lower().replace('.pdf','') + "}\n"
             latex_code += "\\end{subfigure}\n"
-        if i> 0 and i % 17 == 0:
+        if i> 0 and i % 14 == 0:
             latex_code += "\\caption{Prediction time in seconds of a selection of approaches for the corresponding scenario.}\n"
             latex_code += "\\label{fig:app_runtime}\n"
             latex_code += "\\end{figure}\n"
             latex_code += "\\begin{figure}[htb]\n\t\\ContinuedFloat\n\t\\centering\n"
     latex_code += "\\caption{(Cont.) Prediction time in seconds of a selection of approaches for the corresponding scenario.}\n"
-    latex_code += "\\label{fig:app_runtime_%s}\n" % str(int(i/17))
+    latex_code += "\\label{fig:app_runtime_%s}\n" % str(int(i/14))
     latex_code += "\\end{figure}"
     print(latex_code)
 
@@ -86,5 +86,5 @@ def plot(directory, output_directory, title, xlabel, ylabel, approach_names=None
         plt.savefig(output_directory + f'/{scenario}.pdf')
 
 
-generate_latex_code_for_figure_inclusion(directory_of_figures='../figures/runtime_plots', subfigure_size=0.25)
-#plot(directory='../server_output/runtimes', output_directory='../figures/runtime_plots', title='Plot Title', xlabel='Timestep / #Instances', ylabel='Prediction time in s', cumulative=False, approach_names=['bj_e_thompson_rev_sigma=1.0_lambda=0.5','e_rand_bclinucb_sigma=1','e_thompson_sigma=1.0_lambda=0.5','degroote_EpsilonGreedy_RandomForestRegressor','degroote_UCB_RandomForestRegressor'])
+#plot(directory='../server_output/runtimes', output_directory='../figures/runtime_plots', title='Plot Title', xlabel='Timestep / #Instances', ylabel='Prediction time in s', cumulative=False, approach_names=['bj_e_thompson_rev_sigma=1.0_lambda=0.5','e_rand_bclinucb_rev_sigma=10_alpha=1_randsigma=0.25','degroote_EpsilonGreedy_RandomForestRegressor','degroote_UCB_RandomForestRegressor'])
+generate_latex_code_for_figure_inclusion(directory_of_figures='../figures/runtime_plots', subfigure_size=0.3)

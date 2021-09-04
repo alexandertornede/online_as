@@ -54,7 +54,7 @@ def plot(tablename: str, parameter: str, output_directory:str, approach_like:str
         ax.set_xlim(left=x_min, right=x_max)
 
         plt.title(scenario)
-        plt.xlabel(r'$\%s$' % parameter)
+        plt.xlabel(r'$\%s$' % parameter.replace("randsigma","widetilde{\sigma}^2"))
         plt.ylabel("PAR10")
 
         a = data['approach'].array.to_numpy()
@@ -87,7 +87,7 @@ def print_latex_figure_code(approach, parameter, scenarios):
         code += '\t\\includegraphics[width=\linewidth]{img/sensitivity/%s_%s_%s.pdf}\n' % (scenario, parameter, approach)
         code += '\t\\label{fig:app_sensitivity_%s_%s_%s}\n' % (scenario, parameter, approach)
         code += '\\end{subfigure}\n'
-    code += '\\caption{Sensitivity analysis for parameter %s of approach %s.}\n' % ('$\\' + parameter + '$', approach.replace('_','\_'))
+    code += '\\caption{Sensitivity analysis for parameter %s of approach %s.}\n' % ('$\\' + parameter.replace("randsigma","widetilde{\sigma}^2") + '$', approach.replace('_','\_'))
     code += '\\label{fig:app_sensitivity_%s_%s}\n' % (approach, parameter)
     code += '\\end{figure}\n'
     print(code)
@@ -100,6 +100,8 @@ plot(tablename='server_sensitivity', parameter='sigma', output_directory='../fig
 #lambda analysis of Thompson
 plot(tablename='server_sensitivity', parameter='lambda', output_directory='../figures/sensitivity', approach_like='bj_e_thompson_rev_sigma=1.0_lambda=%', x_min=0, x_max=1.1)
 #sigma analysis of LinUCB
-plot(tablename='server_sensitivity', parameter='sigma', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=%_alpha=1.0', x_min=0.5, x_max=10.5)
+plot(tablename='server_sensitivity', parameter='sigma', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=%_alpha=1.0_randsigma=0.25', x_min=0.5, x_max=10.5)
 #alpha analysis of LinUCB
-plot(tablename='server_sensitivity', parameter='alpha', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=1.0_alpha=%', x_min=0, x_max=2.1)
+plot(tablename='server_sensitivity', parameter='alpha', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=10.0_alpha=%_randsigma=0.25', x_min=0, x_max=2.1)
+#randsimga analysis of LinUCB
+plot(tablename='server_sensitivity', parameter='randsigma', output_directory='../figures/sensitivity', approach_like='e_rand_bclinucb_rev_sigma=10.0_alpha=1.0_randsigma=%', x_min=0, x_max=0.6)

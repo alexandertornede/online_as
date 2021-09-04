@@ -68,7 +68,7 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
             # compute feature time
             accumulated_feature_time = 0
             if scenario.feature_cost_data is not None and approach.get_name() != 'sbs' and approach.get_name() != 'oracle' \
-                    and approach.get_name() != 'feature_free_epsilon_greedy' and approach.get_name() != 'online_oracle':
+                    and not approach.get_name().startswith('feature_free_epsilon_greedy') and approach.get_name() != 'online_oracle':
                 feature_time = feature_cost_data[instance_id]
                 accumulated_feature_time = np.sum(feature_time)
 
@@ -101,6 +101,9 @@ def evaluate_train_test_split(scenario: ASlibScenario, approach, metrics, fold: 
             instance_end_time = time.time_ns()
             total_instance_time = instance_end_time - instance_start_time
             total_time = total_time + total_instance_time
+
+            #add model time to accumulated feature time in online setting: #TODO
+            #accumulated_feature_time = accumulated_feature_time + (total_instance_time /1000000000.0)
 
             #make sure that we plot the runtime per instance for plotting
             runtimes_per_instance.append(total_instance_time / 1000000000)

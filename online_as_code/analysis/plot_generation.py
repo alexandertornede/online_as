@@ -11,6 +11,7 @@ import os
 from analysis_utility import load_configuration
 from analysis_utility import clean_algorithm_name
 from analysis_utility import create_directory_if_not_exists
+from scipy.stats import median_absolute_deviation
 
 def bold_extreme_values(data, best=-1, second_best=-1, decimal_places:int  = 2):
     if data == best:
@@ -174,7 +175,7 @@ def generate_ablation_plots(algorithm: str):
 
 def generate_competitor_plots():
     placeholder = 'PLACEHOLDER'
-    query = "SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='" + placeholder + "' AND approach LIKE '%e\_%' AND  (approach LIKE 'e_thompson_rev_s%' OR approach LIKE 'bj_e_thompson_rev%' OR approach LIKE 'e_rand_bclinucb_s%' OR approach LIKE 'e_rand_blinducb_rev_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_degroote_clipped` WHERE metric='" + placeholder + "' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result"
+    query = "SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='" + placeholder + "' AND approach LIKE '%e\_%' AND  (approach LIKE 'bj_e_thompson_s%' OR approach LIKE 'e_thompson_rev%' OR approach LIKE 'e_rand_blinducb_s%' OR approach LIKE 'e_bclinucb_rev_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_degroote_clipped` WHERE metric='" + placeholder + "' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result"
     time_query = query.replace(placeholder, 'learner_runtime_s_per_step')
     time_df = get_dataframe_for_sql_query(time_query)
     time_df = time_df.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
@@ -184,10 +185,11 @@ def generate_competitor_plots():
     npar10_mean = npar10_df.median()
 
     fig, ax = plt.subplots()
-    markers=['o', 'x', 's', 'd', '+', '^','p', '*']
+    markers=['1', 'x', 's', 'd', '2', 'X', 'p']
+    colors = ['#ff7f0e', '#17becf', '#bcbd22', '#000000', '#1f77b4', '#7f7f7f', '#e377c2']
     for i,name in enumerate(npar10_mean.index):
         short_name = clean_algorithm_name(name)
-        ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i])
+        ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i], c=colors[i])
     ax.legend()
     plt.ylabel('rePAR10')
     plt.xlabel('avg. prediction time in seconds')
