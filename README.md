@@ -67,7 +67,13 @@ which will create an environment named `online_as`. After it has been successful
 ```
 conda activate online_as
 ```
-to activate the environment and run the code (see step 4).
+to activate the environment. As some packages are not available in the required version on Anaconda channels, they have to be installed using pip: 
+```
+pip install git+git://github.com/scikit-learn-contrib/forest-confidence-interval.git
+pip install git+git://github.com/mlindauer/ASlibScenario.git
+```
+
+Once this is done, you can run the code (see step 4).
 
 ### 3. ASLib Data
 Obviously, the code requires access to the ASLib scenarios in order to run the requested evaluations. It expects the ASLib scenarios (which can be downloaded from [Github](https://github.com/coseal/aslib_data)) to be located in a folder `data` on the top-level of your IDE project. I.e. your folder structure should look similar to this: 
