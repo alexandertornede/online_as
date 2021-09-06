@@ -98,7 +98,7 @@ After you have successfully run the code and found the corresponding table fille
 In order to generate Figure 8, rename the `output` folder, which was created during the run of the code, to `server_output`. It contains the necessary data to generate the plots included in Figure 8. After the renaming, you can run `analysis/plots_over_time.py`, which will print the Latex code for Figure 8 onto the console and store all required files in the `figures/runtime_plots` directory.
 
 #### *Sensitivity Analysis*
-In order to generate the sensitivity analysis, you have to run another set of experiments. For this purpose, replace the `approches` and `table` lines in the `experiment_configuration.cfg` file with the following two lines:
+In order to generate the sensitivity analysis, you have to run another set of experiments. For this purpose, replace some lines in the `experiment_configuration.cfg` file with the following lines:
 
 ```
 [DATABASE]
@@ -108,6 +108,7 @@ table = server_sensitivity
 
 [EXPERIMENTS]
 ...
+scenarios=ASP-POTASSCO,CPMP-2015,CSP-MZN-2013,MAXSAT12-PMS,QBF-2011,SAT11-RAND
 approaches=thompson_sensivity_sigma,thompson_sensivity_lambda,linucb_sensivity_sigma,linucb_sensivity_alpha,linucb_sensivity_randsigma
 ...
 ```
