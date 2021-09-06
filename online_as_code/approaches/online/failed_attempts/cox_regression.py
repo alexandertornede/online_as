@@ -1,18 +1,8 @@
 import numpy as np
 from numpy import ndarray
-from sklearn.base import clone
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import StandardScaler
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
-import forestci as fci
-from approaches.online.bandit_selection_strategies.ucb import UCB
 import math
 import logging
-from approaches.online.step_function import StepFunction
-
-import matplotlib.pyplot as plt
+from approaches.online.failed_attempts.step_function import StepFunction
 
 logger = logging.getLogger("cox_regression")
 # logger.addHandler(logging.StreamHandler())

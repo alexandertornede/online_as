@@ -116,3 +116,6 @@ Now, run the `run.py` file again and wait until all experiment have been finishe
 
 ## Hyperparameter Details
 All details regarding the hyperparameters and their settings can be found in the `appendix.pdf` file on the top level of the project.
+
+## Code of Approaches
+The code of all approaches evaluated in the paper can be found in the `approaches/online` directory.

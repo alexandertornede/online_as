@@ -16,7 +16,7 @@ from approaches.offline.baselines.isac import ISAC
 from approaches.offline.baselines.satzilla11 import SATzilla11
 from approaches.offline.baselines.satzilla07 import SATzilla07
 from approaches.online.deegrote import Degroote
-from approaches.online.cox_regression import CoxRegression
+from approaches.online.failed_attempts.cox_regression import CoxRegression
 from approaches.online.feature_free_epsilon_greedy import FeatureFreeEpsilonGreedy
 from approaches.online.bandit_selection_strategies.ucb import UCB
 from approaches.online.bandit_selection_strategies.epsilon_greedy import EpsilonGreedy
