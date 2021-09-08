@@ -101,7 +101,7 @@ All results will be stored in the table given in the configuration file and has 
 ### 5. Generating Tables and Figures
 After you have successfully run the code and found the corresponding table filled in your database (cf. Sec. 4), you can generate Figure 1 and Tables 2 and 3 by running the `analysis/plot_generation.py` file. As a result, the latex code for the corresponding tables will be printed onto the console. Moreover, the plots included in Figure 1 will be stored in a `figures` directory at the top-level of your project. 
 
-In order to generate Figure 8, rename the `output` folder, which was created during the run of the code, to `server_output`. It contains the necessary data to generate the plots included in Figure 8. After the renaming, you can run `analysis/plots_over_time.py`, which will print the Latex code for Figure 8 onto the console and store all required files in the `figures/runtime_plots` directory.
+In order to generate Figures 8 and 9, rename the `output` folder, which was created during the run of the code, to `server_output`. It contains the necessary data to generate the plots included in Figures 8 and 9. After the renaming, you can run `analysis/plots_over_time.py`, which will print the Latex code for Figures 8 and 9 onto the console and store all required files in the `figures/runtime_plots` and `figures/cumulative_regret_plots` directories.
 
 #### *Sensitivity Analysis*
 In order to generate the sensitivity analysis, you have to run another set of experiments. For this purpose, replace some lines in the `experiment_configuration.cfg` file with the following lines:
