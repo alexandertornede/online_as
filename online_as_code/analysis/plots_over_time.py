@@ -10,22 +10,22 @@ from analysis_utility import clean_algorithm_name
 plt.style.use('seaborn-whitegrid')
 
 
-def generate_latex_code_for_figure_inclusion(directory_of_figures:str , subfigure_size:float):
+def generate_latex_code_for_figure_inclusion(directory_of_figures:str, subfigure_size:float, sub_directory_in_latex: str, caption: str, label_prefix:str):
     latex_code = "\\begin{figure}[htb]\n\t\\centering\n"
     for i,filename in enumerate(sorted(os.listdir(directory_of_figures))):
         if filename.endswith(".pdf"):
             latex_code += "\\begin{subfigure}{" + str(subfigure_size) + "\\textwidth}\n"
-            latex_code += "\t \includegraphics[width=\linewidth]{img/runtime_plots/" +  filename + "}\n"
+            latex_code += "\t \includegraphics[width=\linewidth]{img/" + sub_directory_in_latex + "/" +  filename + "}\n"
             latex_code += "\t \\caption{}\n"
-            latex_code += "\t \\label{fig:app_runtime_" + filename.lower().replace('.pdf','') + "}\n"
+            latex_code += "\t \\label{" + label_prefix + "_" + filename.lower().replace('.pdf','') + "}\n"
             latex_code += "\\end{subfigure}\n"
         if i> 0 and i % 14 == 0:
-            latex_code += "\\caption{Prediction time in seconds of a selection of approaches for the corresponding scenario.}\n"
-            latex_code += "\\label{fig:app_runtime}\n"
+            latex_code += "\\caption{" + caption + "}\n"
+            latex_code += "\\label{" + label_prefix + "}\n"
             latex_code += "\\end{figure}\n"
             latex_code += "\\begin{figure}[htb]\n\t\\ContinuedFloat\n\t\\centering\n"
-    latex_code += "\\caption{(Cont.) Prediction time in seconds of a selection of approaches for the corresponding scenario.}\n"
-    latex_code += "\\label{fig:app_runtime_%s}\n" % str(int(i/14))
+    latex_code += "\\caption{(Cont.) " + caption + "}\n"
+    latex_code += "\\label{" + label_prefix + "_%s}\n" % str(int(i/14))
     latex_code += "\\end{figure}"
     print(latex_code)
 
@@ -86,5 +86,10 @@ def plot(directory, output_directory, title, xlabel, ylabel, approach_names=None
         plt.savefig(output_directory + f'/{scenario}.pdf')
 
 
+print("runtime plots")
 plot(directory='../server_output/runtimes', output_directory='../figures/runtime_plots', title='Plot Title', xlabel='Timestep / #Instances', ylabel='Prediction time in s', cumulative=False, approach_names=['bj_e_thompson_rev_sigma=1.0_lambda=0.5','e_rand_bclinucb_rev_sigma=10_alpha=1_randsigma=0.25','degroote_EpsilonGreedy_RandomForestRegressor','degroote_UCB_RandomForestRegressor'])
-generate_latex_code_for_figure_inclusion(directory_of_figures='../figures/runtime_plots', subfigure_size=0.3)
+generate_latex_code_for_figure_inclusion(directory_of_figures='../figures/runtime_plots', subfigure_size=0.3, sub_directory_in_latex='runtime_plots', caption='Prediction time in seconds of a selection of approaches for the corresponding scenario.', label_prefix='fig:app_runtime')
+
+print("cumulative regret plots")
+plot(directory='../server_output/regret', output_directory='../figures/cumulative_regret_plots', title='Plot Title', xlabel='Timestep / #Instances', ylabel='Cumulative PAR10 regret wrt. oracle', cumulative=True, approach_names=['bj_e_thompson_rev_sigma=1.0_lambda=0.5','e_rand_bclinucb_rev_sigma=10_alpha=1_randsigma=0.25','degroote_EpsilonGreedy_RandomForestRegressor','degroote_UCB_RandomForestRegressor'])
+generate_latex_code_for_figure_inclusion(directory_of_figures='../figures/cumulative_regret_plots', subfigure_size=0.3, sub_directory_in_latex='cumulative_regret_plots', caption='Cumulative PAR10 regret wrt. oracle.', label_prefix='fig:app_cumulative_regret')
