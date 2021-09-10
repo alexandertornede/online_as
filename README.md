@@ -16,7 +16,7 @@ Please cite this work as
 
 ## Abstract
 In online algorithm selection (OAS), instances of an algorithmic problem class are presented to an agent one after another, and the agent has to quickly select a presumably best algorithm from a fixed set of candidate algorithms. For decision problems such as satisfiability (SAT), quality typically refers to the algorithm's runtime. As the latter is known to exhibit a heavy-tail distribution, an algorithm is normally stopped when exceeding a predefined upper time limit. As a consequence, machine learning methods used to optimize an algorithm selection strategy in a data-driven manner need to deal with right-censored samples, a problem that has received little attention in the literature so far. 
-In this work, we revisit multi-armed bandit algorithms for OAS and discuss their capability of dealing with the problem. Moreover, we adapt them towards runtime-oriented losses, allowing for partially censored data while keeping a space- and time-complexity independent of the time horizon. In an extensive experimental evaluation on an adapted version of the ASlib benchmark, we demonstrate that some of them can update their models several orders of magnitude faster than existing methods at the cost of an acceptable drop in performance.
+In this work, we revisit multi-armed bandit algorithms for OAS and discuss their capability of dealing with the problem. Moreover, we adapt them towards runtime-oriented losses, allowing for partially censored data while keeping a space- and time-complexity independent of the time horizon. In an extensive experimental evaluation on an adapted version of the ASlib benchmark, we demonstrate that theoretically well-founded methods based on Thompson sampling perform specifically strong and improve in comparison to existing methods.
 
 ## Execution Details (Getting the Code To Run)
 For the sake of reproducibility, we will detail how to reproduce the results presented in the paper below.
@@ -38,7 +38,7 @@ ssl = true
 [EXPERIMENTS]
 scenarios=ASP-POTASSCO,BNSL-2016,CPMP-2015,CSP-2010,CSP-MZN-2013,CSP-Minizinc-Time-2016,GRAPHS-2015,MAXSAT-PMS-2016,MAXSAT-WPMS-2016,MAXSAT12-PMS,MAXSAT15-PMS-INDU,MIP-2016,PROTEUS-2014,QBF-2011,QBF-2014,QBF-2016,SAT03-16_INDU,SAT11-HAND,SAT11-INDU,SAT11-RAND,SAT12-ALL,SAT12-HAND,SAT12-INDU,SAT12-RAND,SAT15-INDU,TSP-LION2015
 data_folder=data/
-approaches=e_thompson,e_thompson_rev,bj_e_thompson,bj_e_thompson_rev,e_blinducb,e_blinducb_rev,e_rand_blinducb,e_rand_blinducb_rev,e_bclinucb,e_bclinucb_rev,e_rand_bclinucb,e_rand_bclinucb_rev,online_oracle,degroote_epsilon_greedy,degroote_linear_epsilon_greedy,degroote_ucb
+approaches=e_thompson,e_thompson_rev,bj_e_thompson,bj_e_thompson_rev,e_blinducb,e_blinducb_rev,e_rand_blinducb,e_rand_blinducb_rev,e_bclinucb,e_bclinucb_rev,e_rand_bclinucb,e_rand_bclinucb_rev,online_oracle,degroote_linear_epsilon_greedy
 amount_of_training_scenario_instances=-1
 amount_of_cpus=6
 ; values are: 'standard' (all), 'clip_censored', 'ignore_censored'
@@ -54,7 +54,7 @@ You have to adapt all entries below the `[DATABASE]` tag according to your datab
 * `table`: the name of the table, where results should be stored. This is created automatically by the code if it does not exist yet and should NOT be created manually. (DO NOT CHANGE THIS ENTRY)
 * `ssl`: whether ssl should be used or not
 
-Entries below the `[EXPERIMENTS]` define which experiments will be run. The configuration above will produce the main results presented in the paper, i.e. the results needed to produce Figures 1 and 8, Tables 2 and 3. You might want to adapt the `amount_of_cpus` entry such that the experiments can be parallelized onto the amount of cores you entered.
+Entries below the `[EXPERIMENTS]` define which experiments will be run. The configuration above will produce the main results presented in the paper, i.e. the results needed to produce Figure 1 and  Tables 1 and 3. You might want to adapt the `amount_of_cpus` entry such that the experiments can be parallelized onto the amount of cores you entered.
 
 ### 2. Packages and Dependencies
 For running the code several dependencies have to be fulfilled. The easiest way of getting there is by using [Anaconda](https://anaconda.org/). For this purpose you find an Anaconda environment definition called `online_as.yml` in the `anaconda` folder at the top-level of this project. Assuming that you have Anaconda installed, you can create an according environment with all required packages via
@@ -90,7 +90,7 @@ Obviously, the code requires access to the ASLib scenarios in order to run the r
 ### 4. Evaluation Results
 At this point you should be good to go and can execute the experiments by running the `run.py` on the top-level of the project. 
 
-All results will be stored in the table given in the configuration file and has the following columns:
+All results will be stored in the table given in the configuration file, which has the following columns:
 
 * `scenario_name`: The name of the scenario.
 * `fold`: The train/test-fold associated with the scenario which is considered for this experiment
@@ -99,9 +99,9 @@ All results will be stored in the table given in the configuration file and has 
 * `result`: The output of the corresponding metric.
 
 ### 5. Generating Tables and Figures
-After you have successfully run the code and found the corresponding table filled in your database (cf. Sec. 4), you can generate Figure 1 and Tables 2 and 3 by running the `analysis/plot_generation.py` file. As a result, the latex code for the corresponding tables will be printed onto the console. Moreover, the plots included in Figure 1 will be stored in a `figures` directory at the top-level of your project. 
+After you have successfully run the code and found the corresponding table filled in your database (cf. step 4), you can generate Figure 1 and Tables 1 and 3 by running the `analysis/plot_generation.py` file. As a result, the latex code for the corresponding tables will be printed onto the console. Moreover, the plots included in Figure 1 will be stored in a `figures` directory at the top-level of your project. 
 
-In order to generate Figures 8 and 9, rename the `output` folder, which was created during the run of the code, to `server_output`. It contains the necessary data to generate the plots included in Figures 8 and 9. After the renaming, you can run `analysis/plots_over_time.py`, which will print the Latex code for Figures 8 and 9 onto the console and store all required files in the `figures/runtime_plots` and `figures/cumulative_regret_plots` directories.
+In order to generate Figure 7, rename the `output` folder, which was created during the run of the code, to `server_output`. It contains the necessary data to generate the plots included in Figure 7. After the renaming, you can run `analysis/plots_over_time.py`, which will print the Latex code for Figure 7 onto the console and store all required files in the  `figures/cumulative_regret_plots` directory.
 
 #### *Sensitivity Analysis*
 In order to generate the sensitivity analysis, you have to run another set of experiments. For this purpose, replace some lines in the `experiment_configuration.cfg` file with the following lines:
@@ -119,7 +119,7 @@ approaches=thompson_sensivity_sigma,thompson_sensivity_lambda,linucb_sensivity_s
 ...
 ```
 
-Now, run the `run.py` file again and wait until all experiment have been finished (as the console will tell you). Once this is done, you can run the `analysis/sensitivity_plotter.py` file in order to print the Latex code for Figures 3-7 onto the console and generate the corresponding plots in the directory `figures/sensitivity`. 
+Now, run the `run.py` file again and wait until all experiment have been finished (as the console will tell you). Once this is done, you can run the `analysis/sensitivity_plotter.py` file in order to print the Latex code for Figures 2-6 onto the console and generate the corresponding plots in the directory `figures/sensitivity`. 
 
 ## Hyperparameter Details
 All details regarding the hyperparameters and their settings can be found in the `appendix.pdf` file on the top level of the project.
