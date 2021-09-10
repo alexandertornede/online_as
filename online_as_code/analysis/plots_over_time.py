@@ -86,10 +86,10 @@ def plot(directory, output_directory, title, xlabel, ylabel, approach_names=None
         plt.savefig(output_directory + f'/{scenario}.pdf')
 
 
-print("runtime plots")
-plot(directory='../server_output/runtimes', output_directory='../figures/runtime_plots', title='Plot Title', xlabel='Timestep / #Instances', ylabel='Prediction time in s', cumulative=False, approach_names=['bj_e_thompson_rev_sigma=1.0_lambda=0.5','e_rand_bclinucb_rev_sigma=10_alpha=1_randsigma=0.25','degroote_EpsilonGreedy_RandomForestRegressor','degroote_UCB_RandomForestRegressor'])
-generate_latex_code_for_figure_inclusion(directory_of_figures='../figures/runtime_plots', subfigure_size=0.3, sub_directory_in_latex='runtime_plots', caption='Prediction time in seconds of a selection of approaches for the corresponding scenario.', label_prefix='fig:app_runtime')
+#print("runtime plots")
+#plot(directory='../server_output/runtimes', output_directory='../figures/runtime_plots', title='Plot Title', xlabel='Timestep / #Instances', ylabel='Prediction time in s', cumulative=False, approach_names=['bj_e_thompson_rev_sigma=1.0_lambda=0.5','e_rand_bclinucb_rev_sigma=10_alpha=1_randsigma=0.25','degroote_EpsilonGreedy_LinearRegression'])
+#generate_latex_code_for_figure_inclusion(directory_of_figures='../figures/runtime_plots', subfigure_size=0.3, sub_directory_in_latex='runtime_plots', caption='Prediction time in seconds of a selection of approaches for the corresponding scenario.', label_prefix='fig:app_runtime')
 
 print("cumulative regret plots")
-plot(directory='../server_output/regret', output_directory='../figures/cumulative_regret_plots', title='Plot Title', xlabel='Timestep / #Instances', ylabel='Cumulative PAR10 regret wrt. oracle', cumulative=True, approach_names=['bj_e_thompson_rev_sigma=1.0_lambda=0.5','e_rand_bclinucb_rev_sigma=10_alpha=1_randsigma=0.25','degroote_EpsilonGreedy_RandomForestRegressor','degroote_UCB_RandomForestRegressor'])
+plot(directory='../server_output/regret', output_directory='../figures/cumulative_regret_plots', title='Plot Title', xlabel='Timestep / #Instances', ylabel='Cumulative PAR10 regret wrt. oracle', cumulative=True, approach_names=['e_thompson_rev_sigma=1.0_lambda=0.5','e_bclinucb_rev_sigma=10_alpha=1_randsigma=0.25','degroote_EpsilonGreedy_LinearRegression'])
 generate_latex_code_for_figure_inclusion(directory_of_figures='../figures/cumulative_regret_plots', subfigure_size=0.3, sub_directory_in_latex='cumulative_regret_plots', caption='Cumulative PAR10 regret wrt. oracle.', label_prefix='fig:app_cumulative_regret')

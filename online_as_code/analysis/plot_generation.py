@@ -162,7 +162,7 @@ def generate_ablation_plots(algorithm: str):
         colors = ['#1f77b4', '#ff7f0e', '#e377c2', '#d62728']
     for i,name in enumerate(npar10_mean.index):
         short_name = clean_algorithm_name(name)
-        ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i], c=colors[i])
+        ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i], c=colors[i], s=120)
     ax.legend()
     plt.ylabel('rePAR10')
     plt.xlabel('avg. prediction time in seconds')
@@ -175,7 +175,7 @@ def generate_ablation_plots(algorithm: str):
 
 def generate_competitor_plots():
     placeholder = 'PLACEHOLDER'
-    query = "SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='" + placeholder + "' AND approach LIKE '%e\_%' AND  (approach LIKE 'bj_e_thompson_s%' OR approach LIKE 'e_thompson_rev%' OR approach LIKE 'e_rand_blinducb_s%' OR approach LIKE 'e_bclinucb_rev_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_degroote_clipped` WHERE metric='" + placeholder + "' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result"
+    query = "SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='" + placeholder + "' AND approach LIKE '%e\_%' AND  (approach LIKE 'bj_e_thompson_s%' OR approach LIKE 'e_thompson_rev%' OR approach LIKE 'e_rand_blinducb_s%' OR approach LIKE 'e_bclinucb_rev_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_degroote_clipped` WHERE metric='" + placeholder + "' AND approach='degroote_EpsilonGreedy_LinearRegression' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result"
     time_query = query.replace(placeholder, 'learner_runtime_s_per_step')
     time_df = get_dataframe_for_sql_query(time_query)
     time_df = time_df.pivot_table(values='avg_result', index='scenario_name', columns='approach', aggfunc='first')
@@ -185,11 +185,11 @@ def generate_competitor_plots():
     npar10_mean = npar10_df.median()
 
     fig, ax = plt.subplots()
-    markers=['1', 'x', 's', 'd', '2', 'X', 'p']
-    colors = ['#ff7f0e', '#17becf', '#bcbd22', '#000000', '#1f77b4', '#7f7f7f', '#e377c2']
+    markers=['1', 'x', '2', 'X', 'p']
+    colors = ['#ff7f0e', '#17becf', '#1f77b4', '#7f7f7f', '#e377c2']
     for i,name in enumerate(npar10_mean.index):
         short_name = clean_algorithm_name(name)
-        ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i], c=colors[i])
+        ax.scatter(x=time_mean.loc[name], y=npar10_mean.loc[name], label=short_name, marker=markers[i], c=colors[i], s=120)
     ax.legend()
     plt.ylabel('rePAR10')
     plt.xlabel('avg. prediction time in seconds')
@@ -220,7 +220,7 @@ def generate_preliminary_result_table():
     print(dataframe.to_latex(index=False, float_format="%.3f"))
 
 
-generate_improvement_over_sbs_barchart("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='par10' AND approach LIKE '%e\_%' AND  (approach LIKE 'e_thompson_s%' OR approach LIKE 'bj_e_thompson_rev%' OR approach LIKE 'e_rand_bclinucb_s%' OR approach LIKE 'e_rand_blinducb_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result")
+#generate_improvement_over_sbs_barchart("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='par10' AND approach LIKE '%e\_%' AND  (approach LIKE 'e_thompson_s%' OR approach LIKE 'bj_e_thompson_rev%' OR approach LIKE 'e_rand_bclinucb_s%' OR approach LIKE 'e_rand_blinducb_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result")
 
 generate_ablation_plots('ucb')
 print('Successfully generated ablation plots for UCB.')
@@ -230,13 +230,13 @@ generate_competitor_plots()
 print('Successfully generated competitor plots.')
 
 # result table for our stuff
-#print("Result table for our stuff")
-#generate_result_table("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result) FROM `server_results_all_variants` WHERE metric='par10' AND approach LIKE '%e\_%' AND  (approach LIKE 'e_thompson_s%' OR approach LIKE 'bj_e_thompson_rev%' OR approach LIKE 'e_rand_bclinucb_s%' OR approach LIKE 'e_rand_blinducb_s%') AND approach != 'online_oracle' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name, avg_result", npar10=True)
+print("Small result table in main paper")
+generate_result_table("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_all_variants` WHERE metric='par10' AND (approach LIKE 'e_thompson_rev%' OR approach LIKE 'bj_e_thompson_s%') AND approach != 'online_oracle' AND approach != 'feature_free_epsilon_greedy_cutoff' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_degroote_clipped` WHERE metric='par10' AND approach='degroote_EpsilonGreedy_LinearRegression' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name", npar10=False, stddev=True, show_avg_and_median = False)
 
 # result table for all stuff
-print("Result table for all stuff")
-generate_result_table("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_all_variants` WHERE metric='par10' AND approach LIKE '%e\_%' AND approach != 'online_oracle' AND approach != 'feature_free_epsilon_greedy_cutoff' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_degroote_clipped` WHERE metric='par10' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name", npar10=False, stddev=True, show_avg_and_median = False)
+print("Result table for all approaches in appendix")
+generate_result_table("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_all_variants` WHERE metric='par10' AND approach LIKE '%e\_%' AND approach != 'online_oracle' AND approach != 'feature_free_epsilon_greedy_cutoff' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_degroote_clipped` WHERE metric='par10' AND approach='degroote_EpsilonGreedy_LinearRegression' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name", npar10=False, stddev=True, show_avg_and_median = False)
 
 #prediction time table for all stuff
-print("Prediction time table")
-generate_result_table("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_all_variants` WHERE metric='learner_runtime_s_per_step' AND approach LIKE '%e\_%' AND approach != 'online_oracle' AND approach != 'feature_free_epsilon_greedy_cutoff' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_degroote_clipped` WHERE metric='learner_runtime_s_per_step' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name", npar10=False, stddev=True, decimal_places=3, show_avg_and_median = True)
+#print("Prediction time table")
+#generate_result_table("SELECT * FROM ((SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_all_variants` WHERE metric='learner_runtime_s_per_step' AND approach LIKE '%e\_%' AND approach != 'online_oracle' AND approach != 'feature_free_epsilon_greedy_cutoff' GROUP BY scenario_name, approach, metric) UNION ALL (SELECT scenario_name, approach, metric, AVG(result) as avg_result, COUNT(result), STDDEV(result) as stddev_result FROM `server_results_degroote_clipped` WHERE metric='learner_runtime_s_per_step' AND approach='degroote_EpsilonGreedy_LinearRegression' GROUP BY scenario_name, approach, metric)) as B ORDER BY scenario_name", npar10=False, stddev=True, decimal_places=3, show_avg_and_median = True)
