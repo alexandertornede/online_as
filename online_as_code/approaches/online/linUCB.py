@@ -115,7 +115,7 @@ class LinUCBPerformance:
                 if self.ignore_censored:
                     w = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample]))
                 else:
-                    w = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) * math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id]) * math.log(cutoff)*2
+                    w = math.sqrt(np.linalg.multi_dot([scaled_sample, X_inv, scaled_sample])) * (1+ (1 + math.sqrt(self.number_of_algorithm_selections_with_timeout[algorithm_id])) * math.log(cutoff)*2)
 
                 if self.new_tricks:
                     bound = self.alpha * w * halfnorm.rvs(loc=0, scale=self.randsigma) #np.random.normal(0, 5.0)
