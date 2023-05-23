@@ -3,18 +3,19 @@
 This repository holds the code for our paper "Machine Learning for Online Algorithm Selection under Censored Feedback" by Alexander Tornede, Viktor Bengs and Eyke Hüllermeier. Regarding questions please contact alexander.tornede@upb.de .
 
 ArXiv preprint: https://arxiv.org/abs/2109.06234
+Published paper (open access): https://ojs.aaai.org/index.php/AAAI/article/view/21279
 
 Please cite this work as
 ```
-@article{tornede2021ml4oas,
-  title={Machine Learning for Online Algorithm Selection under Censored Feedback},
-  author={Tornede, Alexander and Bengs, Viktor and H{\"u}llermeier, Eyke},
-  journal={CoRR},
-  volume={abs/2109.06234},
-  year={2021},
-  url={https://arxiv.org/abs/2109.06234},
-  eprinttype={arXiv},
-  eprint={2109.06234},
+@inproceedings{tornede-aaai22a,
+  title        = {Machine Learning for Online Algorithm Selection under Censored Feedback},
+  author       = {Alexander Tornede and
+                  Viktor Bengs and
+                  Eyke H{\"{u}}llermeier},
+  booktitle    = {Proceedings of the Thirty-Sixth {AAAI} Conference on Artificial Intelligence, {AAAI}'22},
+  pages        = {10370--10380},
+  year         = {2022},
+  url          = {https://ojs.aaai.org/index.php/AAAI/article/view/21279}
 }
 ```
 
